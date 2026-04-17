@@ -1,0 +1,27 @@
+[project]
+name = "bub-eye"
+version = "0.1.0"
+description = "Background screen recording with visual-tape integration for Bub (Intel Mac, v1)"
+authors = [
+    { name = "Mengxin Liu", email = "liumengxinfly@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "bub",
+    "imageio-ffmpeg>=0.5.1",
+    "loguru>=0.7",
+    "pydantic-settings>=2.0",
+]
+
+[project.entry-points.bub]
+eye = "bub_eye.plugin:main"
+
+[build-system]
+requires = ["uv_build>=0.9.7,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-asyncio>=0.24",
+]
