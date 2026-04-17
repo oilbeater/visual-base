@@ -112,6 +112,19 @@ def test_h264_videotoolbox_omits_hvc1_tag() -> None:
     assert "-tag:v" not in cmd
 
 
+def test_forces_keyframe_at_each_segment_boundary() -> None:
+    """hevc_videotoolbox ignores -g; without this flag, segments never rotate."""
+    cmd = build_command(_settings(segment_seconds=60), "ffmpeg", 0, "r", "t")
+    expr = cmd[cmd.index("-force_key_frames") + 1]
+    assert expr == "expr:gte(t,n_forced*60)"
+
+
+def test_force_key_frames_tracks_custom_segment_length() -> None:
+    cmd = build_command(_settings(segment_seconds=30), "ffmpeg", 0, "r", "t")
+    expr = cmd[cmd.index("-force_key_frames") + 1]
+    assert expr == "expr:gte(t,n_forced*30)"
+
+
 def test_libx264_fallback_uses_crf_and_stillimage_tuning() -> None:
     cmd = build_command(_settings(codec="libx264", crf=30), "ffmpeg", 0, "r", "t")
     assert cmd[cmd.index("-c:v") + 1] == "libx264"

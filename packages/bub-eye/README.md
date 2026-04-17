@@ -92,6 +92,7 @@ Other useful overrides:
 - **Permission denied / black screen**: re-check Screen Recording grant for the exact `ffmpeg` path `imageio-ffmpeg` resolved to. The grant is path-specific.
 - **`No avfoundation capture screen found`**: run `ffmpeg -f avfoundation -list_devices true -i ""` manually and set `BUB_EYE_DISPLAY_INDEX` to the `[N]` printed on the `Capture screen` line.
 - **ffmpeg keeps restarting**: watchdog triggers if the progress pipe is silent > 15 s (ffmpeg hung) or the binary exits with non-zero. Check the Bub log for `bub-eye: ffmpeg exited rc=...`.
+- **Segments don't rotate (one file keeps growing)**: the `segment` muxer can only cut on keyframes. Hardware encoders like `hevc_videotoolbox` use long default GOPs and ignore `-g`, so we force a keyframe at every segment boundary via `-force_key_frames expr:gte(t,n_forced*N)`. If you see this symptom after changing `BUB_EYE_CODEC`, confirm the codec accepts `-force_key_frames` (all standard ffmpeg encoders do).
 
 ## Roadmap
 

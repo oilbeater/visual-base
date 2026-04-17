@@ -119,8 +119,15 @@ def build_command(
     cmd += _encoder_args(settings)
 
     cmd += [
+        # `-g` is respected by libx264 but largely ignored by hevc_videotoolbox
+        # (Apple's hardware encoder uses its own internal keyframe strategy,
+        # often a very long default GOP). We add `-force_key_frames` as the
+        # hard guarantee so the segment muxer — which can only cut on keyframes —
+        # actually rotates at every `segment_seconds` boundary.
         "-g",
         str(max(1, int(round(fps * seg)))),
+        "-force_key_frames",
+        f"expr:gte(t,n_forced*{seg})",
         "-metadata",
         "title=bub-eye",
         "-metadata",
