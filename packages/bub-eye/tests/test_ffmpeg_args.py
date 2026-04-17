@@ -12,8 +12,9 @@ def _settings(**overrides: object) -> EyeSettings:
     base: dict[str, object] = {
         "enabled": True,
         "ffmpeg": None,
-        "framerate": 1.0,
-        "segment_seconds": 60,
+        "sample_interval_seconds": 1.0,
+        "segment_seconds": 900,
+        "keyframe_interval_seconds": 60,
         "codec": "hevc_videotoolbox",
         "bitrate": "1200k",
         "crf": 28,
@@ -35,17 +36,23 @@ def test_includes_avfoundation_input() -> None:
     assert cmd[i_pos + 1] == "1:none"
 
 
-def test_fps_filter_drives_framerate() -> None:
-    """We use `-vf fps=N` instead of `-framerate N` for reliable decimation."""
-    cmd = build_command(_settings(framerate=0.5), "ffmpeg", 0, "r", "t")
+def test_sample_interval_drives_fps_filter() -> None:
+    """sample_interval_seconds=5 means 0.2 fps."""
+    cmd = build_command(_settings(sample_interval_seconds=5.0), "ffmpeg", 0, "r", "t")
     vf = cmd[cmd.index("-vf") + 1]
-    assert "fps=0.5" in vf
+    assert "fps=0.2" in vf
     # We do NOT set the input -framerate, to avoid avfoundation quirks.
     assert "-framerate" not in cmd
 
 
-def test_segment_time_independent_of_fps() -> None:
-    cmd = build_command(_settings(framerate=2.0, segment_seconds=30), "ffmpeg", 0, "r", "t")
+def test_one_second_sample_interval_yields_one_fps() -> None:
+    cmd = build_command(_settings(sample_interval_seconds=1.0), "ffmpeg", 0, "r", "t")
+    vf = cmd[cmd.index("-vf") + 1]
+    assert "fps=1.0" in vf
+
+
+def test_segment_time_independent_of_sampling() -> None:
+    cmd = build_command(_settings(sample_interval_seconds=0.5, segment_seconds=30), "ffmpeg", 0, "r", "t")
     assert cmd[cmd.index("-segment_time") + 1] == "30"
 
 
@@ -55,14 +62,64 @@ def test_progress_pipe_flag_present() -> None:
     assert cmd[cmd.index("-progress") + 1] == "pipe:1"
 
 
-def test_gop_rounds_fps_times_segment() -> None:
-    cmd = build_command(_settings(framerate=0.5, segment_seconds=60), "ffmpeg", 0, "r", "t")
-    # 0.5 fps * 60 s = 30 frames per segment.
-    assert cmd[cmd.index("-g") + 1] == "30"
+def test_gop_uses_keyframe_interval_not_segment() -> None:
+    """Long segments must keep short GOP for seekability and drift control."""
+    cmd = build_command(
+        _settings(sample_interval_seconds=1.0, segment_seconds=900, keyframe_interval_seconds=60),
+        "ffmpeg",
+        0,
+        "r",
+        "t",
+    )
+    # 1 fps * 60 s = 60 frames per GOP (NOT 900)
+    assert cmd[cmd.index("-g") + 1] == "60"
+
+
+def test_force_key_frames_uses_keyframe_interval() -> None:
+    cmd = build_command(
+        _settings(sample_interval_seconds=1.0, segment_seconds=900, keyframe_interval_seconds=60),
+        "ffmpeg",
+        0,
+        "r",
+        "t",
+    )
+    expr = cmd[cmd.index("-force_key_frames") + 1]
+    assert expr == "expr:gte(t,n_forced*60)"
+
+
+def test_force_key_frames_tracks_custom_keyframe_interval() -> None:
+    cmd = build_command(_settings(keyframe_interval_seconds=30), "ffmpeg", 0, "r", "t")
+    expr = cmd[cmd.index("-force_key_frames") + 1]
+    assert expr == "expr:gte(t,n_forced*30)"
+
+
+def test_sub_one_fps_gop_still_computes_correctly() -> None:
+    """sample_interval=30 s + keyframe_interval=60 s → 2 frames per GOP."""
+    cmd = build_command(
+        _settings(sample_interval_seconds=30.0, keyframe_interval_seconds=60),
+        "ffmpeg",
+        0,
+        "r",
+        "t",
+    )
+    assert cmd[cmd.index("-g") + 1] == "2"
+
+
+def test_very_sparse_sampling_gop_floors_to_one() -> None:
+    """sample_interval=120 s + keyframe_interval=60 s → 0.5 frames rounded up."""
+    cmd = build_command(
+        _settings(sample_interval_seconds=120.0, keyframe_interval_seconds=60),
+        "ffmpeg",
+        0,
+        "r",
+        "t",
+    )
+    # max(1, round(0.5)) — round-half-to-even gives 0, then the max clamp kicks in.
+    assert cmd[cmd.index("-g") + 1] == "1"
 
 
 def test_vf_combines_fps_and_scale() -> None:
-    cmd = build_command(_settings(framerate=1.0, scale_height=540), "ffmpeg", 0, "r", "t")
+    cmd = build_command(_settings(sample_interval_seconds=1.0, scale_height=540), "ffmpeg", 0, "r", "t")
     vf = cmd[cmd.index("-vf") + 1]
     assert vf == "fps=1.0,scale=-2:540"
 
@@ -97,9 +154,7 @@ def test_default_codec_is_hevc_videotoolbox_with_bitrate_cap() -> None:
     c_v_pos = cmd.index("-c:v")
     assert cmd[c_v_pos + 1] == "hevc_videotoolbox"
     assert cmd[cmd.index("-b:v") + 1] == "1200k"
-    # HEVC needs the hvc1 tag for QuickTime/Finder to play/preview it.
     assert cmd[cmd.index("-tag:v") + 1] == "hvc1"
-    # Hardware codec should NOT get software-only tuning flags.
     assert "-tune" not in cmd
     assert "-crf" not in cmd
     assert "-preset" not in cmd
@@ -112,19 +167,6 @@ def test_h264_videotoolbox_omits_hvc1_tag() -> None:
     assert "-tag:v" not in cmd
 
 
-def test_forces_keyframe_at_each_segment_boundary() -> None:
-    """hevc_videotoolbox ignores -g; without this flag, segments never rotate."""
-    cmd = build_command(_settings(segment_seconds=60), "ffmpeg", 0, "r", "t")
-    expr = cmd[cmd.index("-force_key_frames") + 1]
-    assert expr == "expr:gte(t,n_forced*60)"
-
-
-def test_force_key_frames_tracks_custom_segment_length() -> None:
-    cmd = build_command(_settings(segment_seconds=30), "ffmpeg", 0, "r", "t")
-    expr = cmd[cmd.index("-force_key_frames") + 1]
-    assert expr == "expr:gte(t,n_forced*30)"
-
-
 def test_libx264_fallback_uses_crf_and_stillimage_tuning() -> None:
     cmd = build_command(_settings(codec="libx264", crf=30), "ffmpeg", 0, "r", "t")
     assert cmd[cmd.index("-c:v") + 1] == "libx264"
@@ -132,5 +174,4 @@ def test_libx264_fallback_uses_crf_and_stillimage_tuning() -> None:
     assert cmd[cmd.index("-preset") + 1] == "veryfast"
     assert cmd[cmd.index("-crf") + 1] == "30"
     assert cmd[cmd.index("-pix_fmt") + 1] == "yuv420p"
-    # Software encoding ignores the bitrate knob.
     assert "-b:v" not in cmd

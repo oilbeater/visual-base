@@ -23,8 +23,24 @@ class EyeSettings(BaseSettings):
 
     enabled: bool = True
     ffmpeg: str | None = None
-    framerate: float = Field(default=1.0, gt=0.0, le=30.0)
-    segment_seconds: int = Field(default=60, ge=5, le=3600)
+    sample_interval_seconds: float = Field(
+        default=1.0,
+        gt=0.0,
+        description=(
+            "How many seconds between consecutive screen samples that enter the video. "
+            "Typical values: 1 (one frame per second), 5 (one every 5 s), 30 (every half minute)."
+        ),
+    )
+    segment_seconds: int = Field(default=900, ge=5, le=3600)
+    keyframe_interval_seconds: int = Field(
+        default=60,
+        ge=1,
+        description=(
+            "Forced keyframe interval. Controls the number of seekable points inside a "
+            "segment (segment_seconds / keyframe_interval_seconds) and bounds P-frame "
+            "drift; smaller = better random access, slightly larger files."
+        ),
+    )
     codec: str = Field(
         default="hevc_videotoolbox",
         description=(

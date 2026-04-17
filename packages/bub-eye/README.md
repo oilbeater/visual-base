@@ -7,8 +7,8 @@ A visual "eye" plugin for [Bub](https://bub.build): records the screen in the ba
 ## What it does
 
 - Starts an `ffmpeg` subprocess under a watchdog when Bub's gateway comes up.
-- Captures the primary display via `-f avfoundation` and decimates with `-vf fps=N` (default 1 fps).
-- Writes rotating `eye_YYYYMMDD_HHMMSS.mp4` segments (default 60 s each, HEVC via `hevc_videotoolbox` at 1200 kbps, 720p).
+- Captures the primary display via `-f avfoundation` and decimates with `-vf fps=N` (default: one frame every second, i.e. `BUB_EYE_SAMPLE_INTERVAL_SECONDS=1`).
+- Writes rotating `eye_YYYYMMDD_HHMMSS.mp4` segments (default 15 min each, HEVC via `hevc_videotoolbox` at 1200 kbps, 720p, with a forced keyframe every 60 s for seekability).
 - Appends one `TapeEntry.event(name="vision/segment", data={path, start, end, ...})` per closed segment into a dedicated tape directory.
 - Restarts `ffmpeg` with exponential backoff if it exits or its progress pipe goes silent for > 15 s (covers sleep/wake, permission revocation, display changes).
 
@@ -56,9 +56,10 @@ uv pip install git+https://github.com/bubbuild/bub-contrib.git#subdirectory=pack
 | Variable | Default | Description |
 |---|---|---|
 | `BUB_EYE_ENABLED` | `true` | Master switch. `false` → channel reports `enabled=False`. |
+| `BUB_EYE_SAMPLE_INTERVAL_SECONDS` | `1.0` | How many seconds between screen samples that enter the video. Typical: `1` (1 fps), `5` (every 5 s), `30` (every half minute). Supports fractions (`0.5`). |
+| `BUB_EYE_SEGMENT_SECONDS` | `900` | Target length of each segment. 15 min default ≈ 135 MB per file at HEVC 1200 kbps 720p. Lower it or drop `BUB_EYE_BITRATE` if disk pressure matters. |
+| `BUB_EYE_KEYFRAME_INTERVAL_SECONDS` | `60` | Forced keyframe interval. `segment_seconds / keyframe_interval_seconds` is the number of seekable points inside each segment and also bounds P-frame drift. Set it to a divisor of `segment_seconds` for clean cuts. |
 | `BUB_EYE_FFMPEG` | — | Override `ffmpeg` binary path. Falls back to `imageio-ffmpeg`. |
-| `BUB_EYE_FRAMERATE` | `1` | Capture fps (supports fractional, e.g. `0.5`). 1–2 is plenty for visual analysis. |
-| `BUB_EYE_SEGMENT_SECONDS` | `60` | Target length of each segment. |
 | `BUB_EYE_CODEC` | `hevc_videotoolbox` | Video codec. See *Codec & sizing* below. |
 | `BUB_EYE_BITRATE` | `1200k` | Target bitrate for hardware / bitrate-based codecs. Ignored by `libx264`. |
 | `BUB_EYE_CRF` | `28` | Constant Rate Factor for `libx264`. Ignored by hardware codecs. |
@@ -92,7 +93,7 @@ Other useful overrides:
 - **Permission denied / black screen**: re-check Screen Recording grant for the exact `ffmpeg` path `imageio-ffmpeg` resolved to. The grant is path-specific.
 - **`No avfoundation capture screen found`**: run `ffmpeg -f avfoundation -list_devices true -i ""` manually and set `BUB_EYE_DISPLAY_INDEX` to the `[N]` printed on the `Capture screen` line.
 - **ffmpeg keeps restarting**: watchdog triggers if the progress pipe is silent > 15 s (ffmpeg hung) or the binary exits with non-zero. Check the Bub log for `bub-eye: ffmpeg exited rc=...`.
-- **Segments don't rotate (one file keeps growing)**: the `segment` muxer can only cut on keyframes. Hardware encoders like `hevc_videotoolbox` use long default GOPs and ignore `-g`, so we force a keyframe at every segment boundary via `-force_key_frames expr:gte(t,n_forced*N)`. If you see this symptom after changing `BUB_EYE_CODEC`, confirm the codec accepts `-force_key_frames` (all standard ffmpeg encoders do).
+- **Segments don't rotate (one file keeps growing)**: the `segment` muxer can only cut on keyframes. Hardware encoders like `hevc_videotoolbox` use long default GOPs and ignore `-g`, so we force a keyframe every `BUB_EYE_KEYFRAME_INTERVAL_SECONDS` via `-force_key_frames expr:gte(t,n_forced*N)`. If you set `BUB_EYE_KEYFRAME_INTERVAL_SECONDS` larger than `BUB_EYE_SEGMENT_SECONDS`, segments will never rotate — make sure the former is a divisor (or at least not larger) of the latter. After changing `BUB_EYE_CODEC`, confirm the codec accepts `-force_key_frames` (all standard ffmpeg encoders do).
 
 ## Roadmap
 

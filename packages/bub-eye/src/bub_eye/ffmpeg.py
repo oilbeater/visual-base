@@ -93,8 +93,9 @@ def build_command(
     local time; the supervisor passes `TZ=UTC` in the environment so filenames
     are UTC-stamped regardless of host timezone.
     """
-    fps = settings.framerate
+    fps = 1.0 / settings.sample_interval_seconds
     seg = settings.segment_seconds
+    kf = settings.keyframe_interval_seconds
 
     vf_parts: list[str] = [f"fps={fps}"]
     if settings.scale_height != -1:
@@ -123,11 +124,12 @@ def build_command(
         # (Apple's hardware encoder uses its own internal keyframe strategy,
         # often a very long default GOP). We add `-force_key_frames` as the
         # hard guarantee so the segment muxer — which can only cut on keyframes —
-        # actually rotates at every `segment_seconds` boundary.
+        # actually rotates. keyframe_interval_seconds is decoupled from
+        # segment_seconds so long segments still have interior seek points.
         "-g",
-        str(max(1, int(round(fps * seg)))),
+        str(max(1, int(round(fps * kf)))),
         "-force_key_frames",
-        f"expr:gte(t,n_forced*{seg})",
+        f"expr:gte(t,n_forced*{kf})",
         "-metadata",
         "title=bub-eye",
         "-metadata",
