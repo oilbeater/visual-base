@@ -23,9 +23,25 @@ class EyeSettings(BaseSettings):
 
     enabled: bool = True
     ffmpeg: str | None = None
-    framerate: int = Field(default=1, ge=1, le=30)
+    framerate: float = Field(default=1.0, gt=0.0, le=30.0)
     segment_seconds: int = Field(default=60, ge=5, le=3600)
-    crf: int = Field(default=28, ge=0, le=51)
+    codec: str = Field(
+        default="hevc_videotoolbox",
+        description=(
+            "Video codec. Default uses Apple's hardware HEVC encoder for near-zero CPU. "
+            "Use `libx264` as a software fallback if videotoolbox is unavailable."
+        ),
+    )
+    bitrate: str = Field(
+        default="1200k",
+        description="Target bitrate for hardware/bitrate-based codecs (ignored by libx264).",
+    )
+    crf: int = Field(
+        default=28,
+        ge=0,
+        le=51,
+        description="Constant Rate Factor for libx264 (ignored by hardware codecs).",
+    )
     scale_height: int = Field(default=720, description="Output height in px; -1 disables scaling.")
     segments_dir: Path = Field(default_factory=lambda: _bub_home() / "eye" / "segments")
     tape_dir: Path = Field(default_factory=lambda: _bub_home() / "eye" / "tapes")

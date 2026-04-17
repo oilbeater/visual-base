@@ -7,8 +7,8 @@ A visual "eye" plugin for [Bub](https://bub.build): records the screen in the ba
 ## What it does
 
 - Starts an `ffmpeg` subprocess under a watchdog when Bub's gateway comes up.
-- Captures the primary display via `-f avfoundation` at a low framerate (default 1 fps).
-- Writes rotating `eye_YYYYMMDD_HHMMSS.mp4` segments (default 60 s each, H.264 / CRF 28, 720p).
+- Captures the primary display via `-f avfoundation` and decimates with `-vf fps=N` (default 1 fps).
+- Writes rotating `eye_YYYYMMDD_HHMMSS.mp4` segments (default 60 s each, HEVC via `hevc_videotoolbox` at 1200 kbps, 720p).
 - Appends one `TapeEntry.event(name="vision/segment", data={path, start, end, ...})` per closed segment into a dedicated tape directory.
 - Restarts `ffmpeg` with exponential backoff if it exits or its progress pipe goes silent for > 15 s (covers sleep/wake, permission revocation, display changes).
 
@@ -57,13 +57,29 @@ uv pip install git+https://github.com/bubbuild/bub-contrib.git#subdirectory=pack
 |---|---|---|
 | `BUB_EYE_ENABLED` | `true` | Master switch. `false` → channel reports `enabled=False`. |
 | `BUB_EYE_FFMPEG` | — | Override `ffmpeg` binary path. Falls back to `imageio-ffmpeg`. |
-| `BUB_EYE_FRAMERATE` | `1` | Capture fps. 1–2 is plenty for downstream visual analysis. |
+| `BUB_EYE_FRAMERATE` | `1` | Capture fps (supports fractional, e.g. `0.5`). 1–2 is plenty for visual analysis. |
 | `BUB_EYE_SEGMENT_SECONDS` | `60` | Target length of each segment. |
-| `BUB_EYE_CRF` | `28` | libx264 CRF. Higher = smaller file, lower quality. |
+| `BUB_EYE_CODEC` | `hevc_videotoolbox` | Video codec. See *Codec & sizing* below. |
+| `BUB_EYE_BITRATE` | `1200k` | Target bitrate for hardware / bitrate-based codecs. Ignored by `libx264`. |
+| `BUB_EYE_CRF` | `28` | Constant Rate Factor for `libx264`. Ignored by hardware codecs. |
 | `BUB_EYE_SCALE_HEIGHT` | `720` | Output height (preserves aspect). `-1` disables scaling. |
 | `BUB_EYE_SEGMENTS_DIR` | `~/.bub/eye/segments` | Where `.mp4` files go. |
 | `BUB_EYE_TAPE_DIR` | `~/.bub/eye/tapes` | Directory for the visual tape (`visual__<host_hash>.jsonl` inside). |
 | `BUB_EYE_DISPLAY_INDEX` | — | Manual avfoundation screen index. Auto-detected if unset. |
+
+## Codec & sizing
+
+The default `hevc_videotoolbox` uses Apple's hardware HEVC encoder (available on every Intel Mac with Quick Sync and every Apple Silicon Mac). Compared to software H.264, expect:
+
+- **CPU**: ≈ 0% vs. tens of percent on a single core.
+- **File size**: ≈ 9 MB per 60 s at 1200 kbps HEVC 720p, stable regardless of screen activity.
+
+Switch to `libx264` (software H.264) only if your `ffmpeg` build lacks videotoolbox support. In that mode bitrate is unbounded — dynamic content (video playback, scrolling, animations) can balloon a single segment past 100 MB because `libx264` is driven by CRF quality, not a rate cap.
+
+Other useful overrides:
+
+- `BUB_EYE_CODEC=h264_videotoolbox` — hardware H.264 if a downstream tool can't handle HEVC.
+- `BUB_EYE_BITRATE=600k` — halve the file size at the cost of more blocking on high-motion content.
 
 ## Observability
 
