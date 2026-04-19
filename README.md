@@ -22,11 +22,27 @@ plugins are maintained here rather than upstream.
 
 ## Install
 
+`visual-base` depends on the external `kimi` CLI, which is a separate
+Python application installed into its own isolated environment via
+`uv tool install`. The `just` recipes below bundle both steps:
+
 ```bash
-uv sync                # core: bub + bub-kimi + bub-schedule
-uv sync --extra mac    # adds bub-eye on Intel Mac
+just setup          # uv sync + uv tool install kimi-cli
+just setup-mac      # same, but with the bub-eye extra on Intel Mac
 cp .env.example .env   # then fill in BUB_KIMI_* values
 ```
+
+If you don't have `just` yet: `brew install just` on macOS, or see
+[just's install guide](https://github.com/casey/just#installation).
+
+### Why `uv tool install` instead of bundling kimi-cli as a dependency?
+
+`kimi-cli` is an application, not a library — `bub-kimi` shells out to
+the `kimi` binary via `create_subprocess_exec`. Bundling it into the
+same venv would pull in ~50 extra packages and pin `pydantic`/`typer`
+to specific versions that would constrain future `bub` upgrades.
+`uv tool install` puts kimi-cli in its own venv under `~/.local/bin/kimi`,
+which is already on `PATH` — bub-kimi's subprocess finds it there.
 
 ## Run
 
