@@ -1,0 +1,44 @@
+[project]
+name = "visual-base"
+version = "0.1.0"
+description = "A Bub distribution centered on Kimi as the default model and local screen-visual capture."
+readme = "README.md"
+authors = [
+    { name = "Mengxin Liu", email = "liumengxinfly@gmail.com" }
+]
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "bub",
+    "bub-schedule",
+    "bub-kimi",
+]
+
+[project.optional-dependencies]
+mac = ["bub-eye"]
+
+[project.scripts]
+visual-base = "bub.__main__:app"
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+bub = { git = "https://github.com/bubbuild/bub.git", rev = "57c4afd69bbae9ceed75ea1f2220030d383fdab5" }
+bub-schedule = { git = "https://github.com/bubbuild/bub-contrib.git", rev = "cbf1ef0e23dc31daaf3ea24038695487ed662f45", subdirectory = "packages/bub-schedule" }
+bub-kimi = { workspace = true }
+bub-eye = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.9.7,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv_build]
+module-root = "src"
+module-name = "visual_base"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.11.5",
+    "mypy>=1.10.0",
+]
