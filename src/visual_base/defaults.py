@@ -8,5 +8,4 @@ concrete need appears.
 from __future__ import annotations
 
 DEFAULT_MODEL_PLUGIN = "kimi"
-DEFAULT_SCHEDULE_PLUGIN = "schedule"
 MAC_ONLY_PLUGINS = frozenset({"eye"})

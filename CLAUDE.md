@@ -17,10 +17,8 @@ git repos used for reference. Never edit them from here.
 - `bub` is pinned to a specific commit in `[tool.uv.sources]`. Do not
   switch to `branch = "main"` — `bub-eye` depends on channel internals
   that can shift between commits.
-- `bub-schedule` is pulled from `bub-contrib` at a pinned commit via
-  `subdirectory = "packages/bub-schedule"`.
-- To upgrade: bump the SHA, run `uv lock --upgrade-package <name>`,
-  run tests, commit the lock diff separately.
+- To upgrade: bump the SHA, run `uv lock --upgrade-package bub`, run
+  tests, commit the lock diff separately.
 
 ## Plugin platform rules
 

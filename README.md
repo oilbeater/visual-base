@@ -4,18 +4,16 @@ A [Bub](https://github.com/bubbuild/bub) distribution focused on:
 
 - **Kimi** as the default model (via the `bub-kimi` plugin)
 - **Local screen-visual capture** through `bub-eye` (Intel Mac only)
-- **Scheduled tasks** through `bub-schedule`
 
-`visual-base` pins specific commits of upstream `bub` and `bub-contrib`,
-and vendors `bub-kimi` and `bub-eye` as workspace members because those
-plugins are maintained here rather than upstream.
+`visual-base` pins a specific commit of upstream `bub` and vendors
+`bub-kimi` and `bub-eye` as workspace members because those plugins are
+maintained here rather than upstream.
 
 ## Platform matrix
 
 | Plugin | Linux | Intel Mac | Apple Silicon |
 | --- | --- | --- | --- |
 | `bub-kimi` | yes | yes | yes |
-| `bub-schedule` | yes | yes | yes |
 | `bub-eye` | no | yes | no |
 
 `bub-eye` is gated behind the `mac` extra.
@@ -54,7 +52,7 @@ uv run visual-base --help   # alias for the same CLI
 ## Layout
 
 ```
-pyproject.toml       # workspace root; pins bub + bub-schedule to specific commits
+pyproject.toml       # workspace root; pins bub to a specific commit
 src/visual_base/     # distribution-level defaults and version
 packages/bub-kimi/   # vendored plugin (was oilbeater/bub-contrib @ feat/bub-kimi)
 packages/bub-eye/    # vendored plugin (was oilbeater/bub-contrib @ feat/bub-eye-v1-intel-mac)
