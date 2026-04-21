@@ -18,7 +18,7 @@ jobs:
           python-version: "3.12"
 
       - name: Sync deps
-        run: uv sync --extra mac
+        run: uv sync
 
       - name: Ruff
         run: uv run ruff check .

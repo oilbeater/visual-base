@@ -42,44 +42,63 @@ Linux capture backends.
 
 ## Install
 
-From PyPI:
+One command, any platform:
 
 ```bash
-pip install visual-base              # Kimi chat only
-pip install "visual-base[mac]"       # Intel Mac — adds bub_eye screen recording
+uv tool install visual-base
 ```
 
-For local development:
+This puts the `visual-base` / `bub` CLIs on your PATH inside an isolated
+tool venv. On Intel Mac, the first time `bub_eye` actually starts
+recording, it auto-installs `imageio-ffmpeg` into that venv. On all
+platforms, the first Kimi call auto-installs `kimi-cli` as a separate uv
+tool. You never need to touch `pip`, manage extras, or resolve
+dependency conflicts by hand.
+
+Set up Kimi credentials once:
 
 ```bash
-uv sync                              # or: uv sync --extra mac (Intel Mac)
-cp .env.example .env                 # fill in BUB_KIMI_* values
+cp .env.example .env   # then fill in BUB_KIMI_*
 ```
-
-The first `uv run bub` / `visual-base` call that talks to Kimi will
-detect a missing `kimi` binary and auto-install `kimi-cli` via
-`uv tool install` — no separate step needed. Pre-warm it with
-`just setup` / `just setup-mac` (e.g. in a Dockerfile layer).
 
 On Intel Mac, macOS will prompt for **Screen Recording permission** the
 first time `bub_eye` spawns ffmpeg. The grant is path-specific — re-grant
 if you switch to a system ffmpeg via `BUB_EYE_FFMPEG`.
 
-### Why `uv tool install` instead of bundling kimi-cli as a dependency?
+### For local development
 
-`kimi-cli` is an application, not a library — `bub_kimi` shells out to
-the `kimi` binary via `create_subprocess_exec`. Bundling it into the
-same venv would pull in ~50 extra packages and pin `pydantic`/`typer`
-to specific versions that constrain future `bub` upgrades.
-`uv tool install` puts kimi-cli in its own venv under
-`~/.local/bin/kimi`, which is already on `PATH` — `bub_kimi`'s
-subprocess finds it there.
+Clone the repo and let `uv` sync the workspace:
+
+```bash
+uv sync
+cp .env.example .env
+uv run visual-base --help
+```
+
+`just setup` bundles `uv sync` with a pre-warmed `uv tool install
+kimi-cli` for Dockerfile layers or CI caches.
+
+### Why auto-install instead of bundling as a dependency?
+
+`kimi-cli` is an application, not a library, and `imageio-ffmpeg` ships
+a 70 MB ffmpeg binary that only Intel Mac actually uses. Bundling either
+into the wheel would either pin `pydantic`/`typer` to specific versions
+that constrain future `bub` upgrades, or force every Linux / Apple
+Silicon user to download the Mac-only binary for nothing. Auto-installing
+via `uv` at first use keeps the base wheel small and each heavy dep
+gated to the machine that needs it.
 
 ## Run
 
 ```bash
-uv run bub --help
-uv run visual-base --help   # alias for the same CLI
+uv tool run visual-base --help
+uv tool run bub --help          # same CLI, alternate name
+```
+
+Inside a cloned repo:
+
+```bash
+uv run visual-base --help
 ```
 
 ## Layout

@@ -1,6 +1,6 @@
 [project]
 name = "visual-base"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Bub distribution centered on Kimi as the default model and local screen-visual capture."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -25,9 +25,6 @@ classifiers = [
     "Topic :: Software Development",
     "Topic :: Multimedia :: Video :: Capture",
 ]
-
-[project.optional-dependencies]
-mac = ["imageio-ffmpeg>=0.5.1"]
 
 [project.urls]
 Homepage = "https://github.com/oilbeater/visual-base"

@@ -38,16 +38,22 @@ workspace — everything lives inside the one wheel.
 - `loguru` and `pydantic-settings` are always installed — `bub_eye`
   imports them at plugin-load time, even on Linux where the channel
   then reports `enabled=False`.
-- `imageio-ffmpeg` is behind the `[mac]` optional extra. `bub_eye.ffmpeg`
-  only imports it lazily from `resolve_ffmpeg`, so Linux installs without
-  the extra still load the module cleanly.
+- **No optional extras.** Heavy external deps that only a subset of users
+  need (`kimi-cli`, `imageio-ffmpeg`) are auto-installed on first use by
+  the relevant plugin:
+  - `bub_kimi.plugin._ensure_kimi_installed` → `uv tool install kimi-cli`
+  - `bub_eye.ffmpeg._ensure_imageio_ffmpeg_installed` → `uv pip install --python sys.executable imageio-ffmpeg`
+  Both guard with a module-level flag so they only probe once per process,
+  and both raise `RuntimeError` with an actionable message if `uv` itself
+  is missing or the install fails.
 
 ## Plugin platform rules
 
 `bub_eye` requires Intel Mac (ffmpeg + `hevc_videotoolbox`). On any
-other host `EyeChannel.enabled` returns `False` after a log line.
-Installing `visual-base` without `[mac]` keeps the code but skips the
-heavy `imageio-ffmpeg` dep.
+other host `EyeChannel.enabled` returns `False` after a log line, which
+means `resolve_ffmpeg` is never called and the lazy imageio-ffmpeg
+install never fires — Linux / Apple Silicon users don't download the
+heavy binary.
 
 ## Publishing to PyPI
 
