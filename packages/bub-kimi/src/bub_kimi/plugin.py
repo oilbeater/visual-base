@@ -4,6 +4,9 @@ import asyncio
 import contextlib
 import json
 import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -19,6 +22,54 @@ if TYPE_CHECKING:
 
 THREADS_FILE = ".bub-kimi-threads.json"
 RESUME_LINE_PREFIX = "To resume this session:"
+KIMI_CLI_PACKAGE = "kimi-cli"
+KIMI_CLI_PYTHON = "3.13"
+
+_kimi_install_checked = False
+
+
+def _ensure_kimi_installed() -> None:
+    """Install `kimi-cli` via `uv tool install` on first use if missing.
+
+    bub-kimi shells out to the `kimi` binary rather than importing it, so we
+    can't rely on normal Python dependency resolution. The first time we're
+    about to spawn `kimi`, probe PATH and auto-install via uv if absent.
+    """
+    global _kimi_install_checked
+    if _kimi_install_checked:
+        return
+    if shutil.which("kimi") is not None:
+        _kimi_install_checked = True
+        return
+
+    print(
+        f"bub-kimi: kimi binary not found on PATH; installing `{KIMI_CLI_PACKAGE}` "
+        "via `uv tool install` (one-time setup)…",
+        file=sys.stderr,
+        flush=True,
+    )
+    try:
+        subprocess.run(
+            ["uv", "tool", "install", "--python", KIMI_CLI_PYTHON, KIMI_CLI_PACKAGE],
+            check=True,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError(
+            "bub-kimi: cannot auto-install kimi-cli because `uv` is not on PATH. "
+            "Install uv (https://docs.astral.sh/uv/) or run `uv tool install kimi-cli` manually."
+        ) from exc
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            f"bub-kimi: `uv tool install {KIMI_CLI_PACKAGE}` failed with exit code "
+            f"{exc.returncode}. Run it manually to see the underlying error."
+        ) from exc
+
+    if shutil.which("kimi") is None:
+        raise RuntimeError(
+            "bub-kimi: installed kimi-cli but the `kimi` binary is still not on PATH. "
+            "Ensure uv's tool bin directory (`uv tool dir --bin`) is on PATH, then retry."
+        )
+    _kimi_install_checked = True
 
 
 def _load_thread_id(session_id: str, state: State) -> str | None:
@@ -85,6 +136,8 @@ async def run_model(prompt: str, session_id: str, state: State) -> str:
     internal_command_result = await _run_internal_command(prompt, session_id, state)
     if internal_command_result is not None:
         return internal_command_result
+
+    _ensure_kimi_installed()
 
     workspace = workspace_from_state(state)
     thread_id = _load_thread_id(session_id, state)
