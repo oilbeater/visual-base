@@ -20,7 +20,6 @@ def _settings(**overrides: object) -> EyeSettings:
         "crf": 28,
         "scale_height": 720,
         "segments_dir": Path("/tmp/bub-eye-segments"),
-        "tape_dir": Path("/tmp/bub-eye-tapes"),
         "display_index": None,
     }
     base.update(overrides)

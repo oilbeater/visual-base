@@ -1,21 +1,21 @@
 # bub-eye
 
-A visual "eye" plugin for [Bub](https://bub.build): records the screen in the background via `ffmpeg`, rotates short video segments to disk, and appends one `event` entry per segment to an independent **visual tape**.
+A visual "eye" plugin for [Bub](https://bub.build): records the screen in the background via `ffmpeg` and rotates short video segments to disk.
 
-**Status**: v1, Intel Mac only. Acquires and persists; does not yet feed the tape into the model. Consumption hooks (tool / prompt injection) will land in a later version.
+**Status**: v1, Intel Mac only. Acquires and persists; nothing else is wired up yet. Tape writing and model-consumption hooks (tool / prompt injection) will land in a later version.
 
 ## What it does
 
 - Starts an `ffmpeg` subprocess under a watchdog when Bub's gateway comes up.
 - Captures the primary display via `-f avfoundation` and decimates with `-vf fps=N` (default: one frame every second, i.e. `BUB_EYE_SAMPLE_INTERVAL_SECONDS=1`).
 - Writes rotating `eye_YYYYMMDD_HHMMSS.mp4` segments (default 15 min each, HEVC via `hevc_videotoolbox` at 1200 kbps, 720p, with a forced keyframe every 60 s for seekability).
-- Appends one `TapeEntry.event(name="vision/segment", data={path, start, end, ...})` per closed segment into a dedicated tape directory.
 - Restarts `ffmpeg` with exponential backoff if it exits or its progress pipe goes silent for > 15 s (covers sleep/wake, permission revocation, display changes).
 
 ## What it does NOT do (v1)
 
+- No tape integration: closed segments are not surfaced as `TapeEntry` events anywhere.
 - No model consumption path: no `build_prompt` injection, no `@tool` exposure.
-- No perceptual-hash deduplication or segment cleanup — every segment becomes one tape entry.
+- No perceptual-hash deduplication or segment cleanup — segments accumulate on disk until you prune them.
 - No Linux / Windows / Apple Silicon support. On anything other than Intel Mac the channel disables itself with a warning.
 - No hardware encoding (videotoolbox is not in the `imageio-ffmpeg` build).
 - No CLI subcommand, no system-tray UI.
@@ -65,7 +65,6 @@ uv pip install git+https://github.com/bubbuild/bub-contrib.git#subdirectory=pack
 | `BUB_EYE_CRF` | `28` | Constant Rate Factor for `libx264`. Ignored by hardware codecs. |
 | `BUB_EYE_SCALE_HEIGHT` | `720` | Output height (preserves aspect). `-1` disables scaling. |
 | `BUB_EYE_SEGMENTS_DIR` | `~/.bub/eye/segments` | Where `.mp4` files go. |
-| `BUB_EYE_TAPE_DIR` | `~/.bub/eye/tapes` | Directory for the visual tape (`visual__<host_hash>.jsonl` inside). |
 | `BUB_EYE_DISPLAY_INDEX` | — | Manual avfoundation screen index. Auto-detected if unset. |
 
 ## Codec & sizing
@@ -84,7 +83,6 @@ Other useful overrides:
 
 ## Observability
 
-- `tail -f ~/.bub/eye/tapes/visual__*.jsonl` — watch new entries append.
 - `ls -lhtr ~/.bub/eye/segments/` — watch new segments land.
 - `uv run bub hooks` — confirms the `bub-eye` entry point is discovered.
 
@@ -97,6 +95,7 @@ Other useful overrides:
 
 ## Roadmap
 
+- v2: tape integration — one `TapeEntry.event` per closed segment.
 - v2: perceptual-hash dedup, idle-segment GC.
 - v2+: `@tool` for model querying, `build_prompt` injection of recent context.
 - v2+: Apple Silicon, Linux (PipeWire / x11grab), Windows (gdigrab) input backends.

@@ -15,8 +15,8 @@ class EyeSettings(BaseSettings):
     """Configuration for the bub-eye screen recorder.
 
     All fields are driven by `BUB_EYE_*` environment variables. Defaults root
-    storage under `$BUB_HOME/eye/` so the visual tape and segments stay next to
-    the rest of a Bub installation but never mix with conversation tapes.
+    storage under `$BUB_HOME/eye/` so the segments stay next to the rest of a
+    Bub installation.
     """
 
     model_config = SettingsConfigDict(env_prefix="BUB_EYE_", extra="ignore", env_file=".env")
@@ -60,5 +60,4 @@ class EyeSettings(BaseSettings):
     )
     scale_height: int = Field(default=720, description="Output height in px; -1 disables scaling.")
     segments_dir: Path = Field(default_factory=lambda: _bub_home() / "eye" / "segments")
-    tape_dir: Path = Field(default_factory=lambda: _bub_home() / "eye" / "tapes")
     display_index: int | None = None

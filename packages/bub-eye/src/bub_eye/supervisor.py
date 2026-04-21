@@ -1,4 +1,4 @@
-"""FFmpeg watchdog: spawn, monitor, restart, surface closed segments."""
+"""FFmpeg watchdog: spawn, monitor, restart."""
 
 from __future__ import annotations
 
@@ -6,17 +6,13 @@ import asyncio
 import contextlib
 import os
 import time
-from collections.abc import Callable
 from datetime import UTC, datetime
-from pathlib import Path
 from uuid import uuid4
 
 from loguru import logger
 
 from bub_eye.ffmpeg import build_command, detect_screen_index, resolve_ffmpeg
 from bub_eye.settings import EyeSettings
-
-SegmentCallback = Callable[[Path], None]
 
 _PROGRESS_TIMEOUT_S = 15.0
 _POLL_INTERVAL_S = 2.0
@@ -30,15 +26,12 @@ class FFmpegSupervisor:
 
     On each spawn:
       * watches `-progress pipe:1` output as a liveness heartbeat
-      * scans the segment directory and emits every closed segment exactly once
       * kills ffmpeg if the heartbeat goes silent for > _PROGRESS_TIMEOUT_S
-      * on any exit, flushes remaining closed segments and sleeps with
-        exponential backoff before respawning
+      * on any exit, sleeps with exponential backoff before respawning
     """
 
-    def __init__(self, settings: EyeSettings, on_segment: SegmentCallback) -> None:
+    def __init__(self, settings: EyeSettings) -> None:
         self._settings = settings
-        self._on_segment = on_segment
         self._backoff = _BACKOFF_INITIAL_S
 
     async def run(self, stop_event: asyncio.Event) -> None:
@@ -106,8 +99,6 @@ class FFmpegSupervisor:
         assert proc.stdout is not None
 
         last_progress = time.monotonic()
-        # Snapshot existing segments — a crash-restart should not re-emit history.
-        emitted: set[Path] = set(self._settings.segments_dir.glob("*.mp4"))
 
         async def watch_progress() -> None:
             nonlocal last_progress
@@ -146,8 +137,6 @@ class FFmpegSupervisor:
                     )
                     proc.kill()
                     break
-
-                self._emit_closed(emitted, keep_newest_open=True)
         finally:
             progress_task.cancel()
             stderr_task.cancel()
@@ -164,26 +153,4 @@ class FFmpegSupervisor:
                     proc.kill()
                     await proc.wait()
 
-            # With ffmpeg gone, the last segment is now closed too.
-            self._emit_closed(emitted, keep_newest_open=False)
-
         return proc.returncode or 0
-
-    def _emit_closed(self, emitted: set[Path], *, keep_newest_open: bool) -> None:
-        current = sorted(self._settings.segments_dir.glob("eye_*.mp4"))
-        if not current:
-            return
-
-        if keep_newest_open and len(current) >= 1:
-            closed_candidates = current[:-1]
-        else:
-            closed_candidates = current
-
-        for path in closed_candidates:
-            if path in emitted:
-                continue
-            try:
-                self._on_segment(path)
-            except Exception:
-                logger.exception("bub-eye: segment callback failed for {}", path)
-            emitted.add(path)

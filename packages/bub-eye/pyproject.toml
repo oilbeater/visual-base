@@ -1,7 +1,7 @@
 [project]
 name = "bub-eye"
 version = "0.1.0"
-description = "Background screen recording with visual-tape integration for Bub (Intel Mac, v1)"
+description = "Background screen recording for Bub (Intel Mac, v1)"
 authors = [
     { name = "Mengxin Liu", email = "liumengxinfly@gmail.com" }
 ]
