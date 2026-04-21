@@ -16,7 +16,7 @@ class EyeImpl:
 
     @hookimpl
     def provide_channels(self, message_handler: MessageHandler) -> list[Channel]:
-        return [EyeChannel(self._settings)]
+        return [EyeChannel(self._settings, message_handler=message_handler)]
 
 
 main = EyeImpl()
