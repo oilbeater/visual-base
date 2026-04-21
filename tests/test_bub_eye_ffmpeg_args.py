@@ -40,8 +40,22 @@ def test_sample_interval_drives_fps_filter() -> None:
     cmd = build_command(_settings(sample_interval_seconds=5.0), "ffmpeg", 0, "r", "t")
     vf = cmd[cmd.index("-vf") + 1]
     assert "fps=0.2" in vf
-    # We do NOT set the input -framerate, to avoid avfoundation quirks.
-    assert "-framerate" not in cmd
+    # The fps filter is the source of truth; input -framerate stays hardcoded
+    # at 1 as a buffer-size hint and is NOT derived from sample_interval_seconds
+    # (avfoundation can reject fractional values).
+    assert cmd[cmd.index("-framerate") + 1] == "1"
+
+
+def test_input_framerate_hint_is_hardcoded_one() -> None:
+    """-framerate on avfoundation is a buffer hint, not the sampling rate."""
+    cmd = build_command(_settings(sample_interval_seconds=1.0), "ffmpeg", 0, "r", "t")
+    assert cmd[cmd.index("-framerate") + 1] == "1"
+
+
+def test_input_pixel_format_matches_videotoolbox_native() -> None:
+    """nv12 skips a BGRA→YUV swscale pass before hevc_videotoolbox."""
+    cmd = build_command(_settings(), "ffmpeg", 0, "r", "t")
+    assert cmd[cmd.index("-pixel_format") + 1] == "nv12"
 
 
 def test_one_second_sample_interval_yields_one_fps() -> None:
