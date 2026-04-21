@@ -10,30 +10,20 @@ plugins as top-level modules and registers them as `bub` entry points.
 `bub` itself is tracked via the usual PyPI release channel
 (`bub>=0.3.6,<0.4`).
 
-## Platform matrix
-
-| Capability | Linux | Intel Mac | Apple Silicon |
-| --- | --- | --- | --- |
-| `bub_kimi` (chat via Kimi CLI) | yes | yes | yes |
-| `bub_eye` (background screen recording) | no | yes | no |
-
-`bub_eye` requires the `[mac]` extra, which adds `imageio-ffmpeg`. On
-Linux the plugin loads but its channel disables itself.
-
 ## Install
 
 From PyPI:
 
 ```bash
-pip install visual-base            # Linux / Apple Silicon — bub_eye stays dormant
-pip install "visual-base[mac]"     # Intel Mac — pulls imageio-ffmpeg
+pip install visual-base              # Kimi chat only
+pip install "visual-base[mac]"       # Intel Mac — adds bub_eye screen recording
 ```
 
 For local development:
 
 ```bash
-uv sync                            # or: uv sync --extra mac
-cp .env.example .env               # fill in BUB_KIMI_* values
+uv sync                              # or: uv sync --extra mac (Intel Mac)
+cp .env.example .env                 # fill in BUB_KIMI_* values
 ```
 
 The first `uv run bub` / `visual-base` call that actually talks to
