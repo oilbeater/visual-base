@@ -15,8 +15,8 @@ git repos used for reference. Never edit them from here.
 ## Dependency pins
 
 - `bub` is pinned to a specific commit in `[tool.uv.sources]`. Do not
-  switch to `branch = "main"` — `bub-eye` is tightly coupled to
-  tape/channel internals.
+  switch to `branch = "main"` — `bub-eye` depends on channel internals
+  that can shift between commits.
 - `bub-schedule` is pulled from `bub-contrib` at a pinned commit via
   `subdirectory = "packages/bub-schedule"`.
 - To upgrade: bump the SHA, run `uv lock --upgrade-package <name>`,
@@ -30,8 +30,10 @@ not pull it. Do not move it to the main `dependencies` list.
 
 ## Branch policy
 
-Follow the user's global rule: never commit directly to `main`.
-Always branch off `main` into `feat/*` or `fix/*` and land via PR.
+This repo is an exception to the user's global rule: commit directly to
+`main` by default. Only branch off into `feat/*` / `fix/*` when the user
+explicitly asks (or when the change clearly warrants a review cycle —
+e.g. cross-repo coordination, risky migrations).
 
 ## Commit policy
 
