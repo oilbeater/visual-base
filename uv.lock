@@ -6,13 +6,6 @@ resolution-markers = [
     "python_full_version < '3.14'",
 ]
 
-[manifest]
-members = [
-    "bub-eye",
-    "bub-kimi",
-    "visual-base",
-]
-
 [[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
@@ -212,12 +205,11 @@ wheels = [
 
 [[package]]
 name = "bub"
-version = "0.3.7.dev3+g57c4afd69"
-source = { git = "https://github.com/bubbuild/bub.git?rev=57c4afd69bbae9ceed75ea1f2220030d383fdab5#57c4afd69bbae9ceed75ea1f2220030d383fdab5" }
+version = "0.3.6"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "any-llm-sdk" },
-    { name = "httpx", extra = ["socks"] },
     { name = "loguru" },
     { name = "pluggy" },
     { name = "prompt-toolkit" },
@@ -230,42 +222,10 @@ dependencies = [
     { name = "rich" },
     { name = "typer" },
 ]
-
-[[package]]
-name = "bub-eye"
-version = "0.1.0"
-source = { editable = "packages/bub-eye" }
-dependencies = [
-    { name = "bub" },
-    { name = "imageio-ffmpeg" },
-    { name = "loguru" },
-    { name = "pydantic-settings" },
+sdist = { url = "https://files.pythonhosted.org/packages/4c/fb/49cc21b69b1adfbaa6950d1e6e7edf30a3a40248b7017748dbee1595bca0/bub-0.3.6.tar.gz", hash = "sha256:d165e1f716f675e0b110971a3620f39e15829c6b5ad5305b3d23cf444648bfe5", size = 86177, upload-time = "2026-04-16T08:50:45.601Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/aa/6bc2906cf27b60f287585cf564cbceaa090f8246a9ae0ec54e232b12b3af/bub-0.3.6-py3-none-any.whl", hash = "sha256:24fba14b488c7fb6b97a7b10366dfdcb659390672c6f5dcdd4aa4dc16233b6d7", size = 83783, upload-time = "2026-04-16T08:50:44.146Z" },
 ]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "bub", git = "https://github.com/bubbuild/bub.git?rev=57c4afd69bbae9ceed75ea1f2220030d383fdab5" },
-    { name = "imageio-ffmpeg", specifier = ">=0.5.1" },
-    { name = "loguru", specifier = ">=0.7" },
-    { name = "pydantic-settings", specifier = ">=2.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=9.0.3" },
-    { name = "pytest-asyncio", specifier = ">=0.24" },
-]
-
-[[package]]
-name = "bub-kimi"
-version = "0.1.0"
-source = { editable = "packages/bub-kimi" }
 
 [[package]]
 name = "certifi"
@@ -549,11 +509,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b1/df/48c586a5fe32a0f01324ee087459e112ebb7224f646c0b5023f5e79e9956/httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc", size = 141406, upload-time = "2024-12-06T15:37:23.222Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
-]
-
-[package.optional-dependencies]
-socks = [
-    { name = "socksio" },
 ]
 
 [[package]]
@@ -1425,15 +1380,6 @@ wheels = [
 ]
 
 [[package]]
-name = "socksio"
-version = "1.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f8/5c/48a7d9495be3d1c651198fd99dbb6ce190e2274d0f28b9051307bdec6b85/socksio-1.0.0.tar.gz", hash = "sha256:f88beb3da5b5c38b9890469de67d0cb0f9d494b78b106ca1845f96c10b91c4ac", size = 19055, upload-time = "2020-04-17T15:50:34.664Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/c3/6eeb6034408dac0fa653d126c9204ade96b819c936e136c5e8a6897eee9c/socksio-1.0.0-py3-none-any.whl", hash = "sha256:95dc1f15f9b34e8d7b16f06d74b8ccf48f609af32ab33c608d08761c5dcbb1f3", size = 12763, upload-time = "2020-04-17T15:50:31.878Z" },
-]
-
-[[package]]
 name = "tqdm"
 version = "4.67.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1487,26 +1433,29 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "bub" },
-    { name = "bub-kimi" },
+    { name = "loguru" },
+    { name = "pydantic-settings" },
 ]
 
 [package.optional-dependencies]
 mac = [
-    { name = "bub-eye" },
+    { name = "imageio-ffmpeg" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "mypy" },
     { name = "pytest" },
+    { name = "pytest-asyncio" },
     { name = "ruff" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "bub", git = "https://github.com/bubbuild/bub.git?rev=57c4afd69bbae9ceed75ea1f2220030d383fdab5" },
-    { name = "bub-eye", marker = "extra == 'mac'", editable = "packages/bub-eye" },
-    { name = "bub-kimi", editable = "packages/bub-kimi" },
+    { name = "bub", specifier = ">=0.3.6,<0.4" },
+    { name = "imageio-ffmpeg", marker = "extra == 'mac'", specifier = ">=0.5.1" },
+    { name = "loguru", specifier = ">=0.7" },
+    { name = "pydantic-settings", specifier = ">=2.0" },
 ]
 provides-extras = ["mac"]
 
@@ -1514,6 +1463,7 @@ provides-extras = ["mac"]
 dev = [
     { name = "mypy", specifier = ">=1.10.0" },
     { name = "pytest", specifier = ">=9.0.3" },
+    { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "ruff", specifier = ">=0.11.5" },
 ]
 

@@ -4,27 +4,65 @@ Guidance for Claude Code working in the `visual-base` distribution.
 
 ## What this repo is
 
-A Bub distribution. It is **not** the core framework (`bub`) and **not**
-the community plugin monorepo (`bub-contrib`). It vendors two plugins
-(`bub-kimi`, `bub-eye`) that are not expected to land upstream, and
-pins specific commits of the upstream ones.
+A Bub distribution published to PyPI as a single `visual-base` package.
+It bundles the framework plus two plugins (`bub-kimi`, `bub-eye`) as
+top-level modules inside the same wheel. It is **not** the core
+framework (`bub`) and **not** the community plugin monorepo
+(`bub-contrib`) — those are separate upstreams.
 
 The sibling checkouts `../bub/` and `../bub-contrib/` are independent
 git repos used for reference. Never edit them from here.
 
-## Dependency pins
+## Package layout
 
-- `bub` is pinned to a specific commit in `[tool.uv.sources]`. Do not
-  switch to `branch = "main"` — `bub-eye` depends on channel internals
-  that can shift between commits.
-- To upgrade: bump the SHA, run `uv lock --upgrade-package bub`, run
-  tests, commit the lock diff separately.
+```
+pyproject.toml       # hatchling build, publishes visual-base to PyPI
+LICENSE              # MIT
+src/visual_base/     # distribution-level defaults and version
+src/bub_kimi/        # Kimi CLI plugin (entry-point: bub.kimi)
+src/bub_eye/         # Screen-capture plugin (entry-point: bub.eye)
+src/skills/          # Builtin skills shipped with the wheel
+tests/               # One test file per plugin
+```
+
+The three top-level packages (`bub_kimi`, `bub_eye`, `skills`) are
+bundled into the single `visual-base` distribution via
+`[tool.hatch.build.targets.wheel].packages`. Do not re-introduce a
+workspace — everything lives inside the one wheel.
+
+## Dependency rules
+
+- `bub>=0.3.6,<0.4` — track upstream PyPI releases. Bump the floor when
+  you need new framework APIs; bump the ceiling when bub makes a breaking
+  minor release.
+- `loguru` and `pydantic-settings` are always installed — `bub_eye`
+  imports them at plugin-load time, even on Linux where the channel
+  then reports `enabled=False`.
+- `imageio-ffmpeg` is behind the `[mac]` optional extra. `bub_eye.ffmpeg`
+  only imports it lazily from `resolve_ffmpeg`, so Linux installs without
+  the extra still load the module cleanly.
 
 ## Plugin platform rules
 
-`bub-eye` requires Intel Mac (ffmpeg + `hevc_videotoolbox`). It lives
-under `[project.optional-dependencies].mac` so `uv sync` on Linux will
-not pull it. Do not move it to the main `dependencies` list.
+`bub_eye` requires Intel Mac (ffmpeg + `hevc_videotoolbox`). On any
+other host `EyeChannel.enabled` returns `False` after a log line.
+Installing `visual-base` without `[mac]` keeps the code but skips the
+heavy `imageio-ffmpeg` dep.
+
+## Publishing to PyPI
+
+Releases are driven by `.github/workflows/release.yml`, triggered by
+pushing a `v<version>` tag. The workflow:
+
+1. Runs ruff + pytest.
+2. Checks the tag matches `project.version` in `pyproject.toml`.
+3. Builds sdist + wheel via `uv build`.
+4. Publishes via PyPI trusted publisher (OIDC, environment `pypi`).
+
+Before the first release, configure a Pending publisher on PyPI
+pointing at `oilbeater/visual-base` → `release.yml` → environment `pypi`.
+Bumping the version: edit `pyproject.toml`, commit, `git tag vX.Y.Z`,
+`git push --tags`.
 
 ## Branch policy
 

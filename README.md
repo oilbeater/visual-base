@@ -2,43 +2,53 @@
 
 A [Bub](https://github.com/bubbuild/bub) distribution focused on:
 
-- **Kimi** as the default model (via the `bub-kimi` plugin)
-- **Local screen-visual capture** through `bub-eye` (Intel Mac only)
+- **Kimi** as the default model (via the bundled `bub_kimi` plugin)
+- **Local screen-visual capture** through the bundled `bub_eye` plugin (Intel Mac only)
 
-`visual-base` pins a specific commit of upstream `bub` and vendors
-`bub-kimi` and `bub-eye` as workspace members because those plugins are
-maintained here rather than upstream.
+`visual-base` is published to PyPI as a single wheel that ships both
+plugins as top-level modules and registers them as `bub` entry points.
+`bub` itself is tracked via the usual PyPI release channel
+(`bub>=0.3.6,<0.4`).
 
 ## Platform matrix
 
-| Plugin | Linux | Intel Mac | Apple Silicon |
+| Capability | Linux | Intel Mac | Apple Silicon |
 | --- | --- | --- | --- |
-| `bub-kimi` | yes | yes | yes |
-| `bub-eye` | no | yes | no |
+| `bub_kimi` (chat via Kimi CLI) | yes | yes | yes |
+| `bub_eye` (background screen recording) | no | yes | no |
 
-`bub-eye` is gated behind the `mac` extra.
+`bub_eye` requires the `[mac]` extra, which adds `imageio-ffmpeg`. On
+Linux the plugin loads but its channel disables itself.
 
 ## Install
 
+From PyPI:
+
 ```bash
-uv sync                     # or: uv sync --extra mac (Intel Mac, pulls bub-eye)
-cp .env.example .env        # then fill in BUB_KIMI_* values
+pip install visual-base            # Linux / Apple Silicon — bub_eye stays dormant
+pip install "visual-base[mac]"     # Intel Mac — pulls imageio-ffmpeg
 ```
 
-The first `uv run bub` that actually talks to Kimi will detect a missing
-`kimi` binary and auto-install `kimi-cli` via `uv tool install` — no
-separate step needed. If you want to pre-warm it (e.g. in a Dockerfile
-layer), the `justfile` exposes `just setup` / `just setup-mac` which
-front-load the install.
+For local development:
+
+```bash
+uv sync                            # or: uv sync --extra mac
+cp .env.example .env               # fill in BUB_KIMI_* values
+```
+
+The first `uv run bub` / `visual-base` call that actually talks to
+Kimi will detect a missing `kimi` binary and auto-install `kimi-cli`
+via `uv tool install` — no separate step needed. To pre-warm it (e.g.
+in a Dockerfile layer), use `just setup` / `just setup-mac`.
 
 ### Why `uv tool install` instead of bundling kimi-cli as a dependency?
 
-`kimi-cli` is an application, not a library — `bub-kimi` shells out to
+`kimi-cli` is an application, not a library — `bub_kimi` shells out to
 the `kimi` binary via `create_subprocess_exec`. Bundling it into the
 same venv would pull in ~50 extra packages and pin `pydantic`/`typer`
 to specific versions that would constrain future `bub` upgrades.
 `uv tool install` puts kimi-cli in its own venv under `~/.local/bin/kimi`,
-which is already on `PATH` — bub-kimi's subprocess finds it there.
+which is already on `PATH` — `bub_kimi`'s subprocess finds it there.
 
 ## Run
 
@@ -50,14 +60,26 @@ uv run visual-base --help   # alias for the same CLI
 ## Layout
 
 ```
-pyproject.toml       # workspace root; pins bub to a specific commit
+pyproject.toml       # hatchling build, publishes visual-base to PyPI
+LICENSE              # MIT
 src/visual_base/     # distribution-level defaults and version
-packages/bub-kimi/   # vendored plugin (was oilbeater/bub-contrib @ feat/bub-kimi)
-packages/bub-eye/    # vendored plugin (was oilbeater/bub-contrib @ feat/bub-eye-v1-intel-mac)
+src/bub_kimi/        # Kimi CLI plugin (entry-point: bub.kimi)
+src/bub_eye/         # Screen-capture plugin (entry-point: bub.eye)
+src/skills/          # Builtin skills shipped with the wheel
+tests/               # ruff + pytest run against the flat layout
 ```
 
-## Upgrading the pinned `bub`
+## Releasing
 
-Bump `[tool.uv.sources].bub.rev` in `pyproject.toml` to the new SHA, run
-`uv lock --upgrade-package bub`, run the test suite, and commit the lock
-change separately.
+Tag-driven. Edit `version` in `pyproject.toml`, commit, then:
+
+```bash
+git tag v0.1.0
+git push --tags
+```
+
+`.github/workflows/release.yml` runs ruff + pytest, checks the tag
+matches the project version, builds sdist + wheel with `uv build`, and
+publishes via PyPI trusted publisher (OIDC). A Pending publisher for
+`oilbeater/visual-base` → `release.yml` → environment `pypi` must be
+configured on PyPI first.

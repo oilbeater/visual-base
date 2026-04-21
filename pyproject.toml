@@ -3,40 +3,70 @@ name = "visual-base"
 version = "0.1.0"
 description = "A Bub distribution centered on Kimi as the default model and local screen-visual capture."
 readme = "README.md"
+license = { file = "LICENSE" }
 authors = [
     { name = "Mengxin Liu", email = "liumengxinfly@gmail.com" }
 ]
 requires-python = ">=3.12,<4.0"
 dependencies = [
-    "bub",
-    "bub-kimi",
+    "bub>=0.3.6,<0.4",
+    "loguru>=0.7",
+    "pydantic-settings>=2.0",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+    "Topic :: Multimedia :: Video :: Capture",
 ]
 
 [project.optional-dependencies]
-mac = ["bub-eye"]
+mac = ["imageio-ffmpeg>=0.5.1"]
+
+[project.urls]
+Homepage = "https://github.com/oilbeater/visual-base"
+Repository = "https://github.com/oilbeater/visual-base"
+Issues = "https://github.com/oilbeater/visual-base/issues"
 
 [project.scripts]
 visual-base = "bub.__main__:app"
 
-[tool.uv.workspace]
-members = ["packages/*"]
-
-[tool.uv.sources]
-bub = { git = "https://github.com/bubbuild/bub.git", rev = "57c4afd69bbae9ceed75ea1f2220030d383fdab5" }
-bub-kimi = { workspace = true }
-bub-eye = { workspace = true }
+[project.entry-points.bub]
+kimi = "bub_kimi.plugin"
+eye = "bub_eye.plugin:main"
 
 [build-system]
-requires = ["uv_build>=0.9.7,<0.10.0"]
-build-backend = "uv_build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.uv_build]
-module-root = "src"
-module-name = "visual_base"
+[tool.hatch.build.targets.wheel]
+packages = ["src/visual_base", "src/bub_kimi", "src/bub_eye", "src/skills"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/visual_base",
+    "src/bub_kimi",
+    "src/bub_eye",
+    "src/skills",
+    "tests",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
+    "pytest-asyncio>=0.24",
     "ruff>=0.11.5",
     "mypy>=1.10.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
