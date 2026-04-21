@@ -36,9 +36,12 @@ This module aggregates those per-segment files into a single daily log::
     - `09:05:00 - 09:14:55` ...
     - `09:15:00 - 09:30:00` ...
 
-Bullets are sorted by start time and deduped by exact line equality, so
-re-merging the same segment is a no-op. The ``关键实体`` section is
-intentionally dropped from the daily view — wikilinks inside each bullet
+Bullets are sorted by top-level start time and deduped by the (line, children)
+pair, so re-merging the same segment is a no-op. Indented sub-bullets stay
+attached to their parent — the skill may emit nested blocks when several
+adjacent activities share one URL / article / project, and this module keeps
+that hierarchy intact across the daily aggregation. The ``关键实体`` section
+is intentionally dropped from the daily view — wikilinks inside each bullet
 still connect in Obsidian, and a per-segment roll-up would grow unwieldy.
 """
 
@@ -61,6 +64,7 @@ class Bullet:
     start_sec: int
     end_sec: int
     line: str
+    children: tuple[str, ...] = ()
 
 
 def daily_log_path(logs_dir: Path, video: Path) -> Path | None:
@@ -128,25 +132,59 @@ def _extract_bullets(md: str) -> list[Bullet]:
     bullets: list[Bullet] = []
     body = _body_after_frontmatter(md)
     in_main_section = False
+
+    current_start: int | None = None
+    current_end: int | None = None
+    current_line: str | None = None
+    current_children: list[str] = []
+
+    def flush() -> None:
+        nonlocal current_start, current_end, current_line, current_children
+        if current_line is not None:
+            assert current_start is not None and current_end is not None
+            bullets.append(
+                Bullet(
+                    current_start,
+                    current_end,
+                    current_line,
+                    tuple(current_children),
+                )
+            )
+        current_start = None
+        current_end = None
+        current_line = None
+        current_children = []
+
     for line in body.splitlines():
         stripped = line.lstrip()
         if stripped.startswith("## "):
+            flush()
             in_main_section = False
             continue
         if stripped.startswith("# "):
+            flush()
             in_main_section = True
             continue
         if not in_main_section:
             continue
         m = _BULLET_RE.match(line)
-        if m is None:
+        if m is not None:
+            flush()
+            try:
+                start = _parse_hms(m.group(1))
+                end = _parse_hms(m.group(2))
+            except ValueError:
+                continue
+            current_start = start
+            current_end = end
+            current_line = line.rstrip()
+            current_children = []
             continue
-        try:
-            start = _parse_hms(m.group(1))
-            end = _parse_hms(m.group(2))
-        except ValueError:
+        if current_line is not None and line and line[0] in (" ", "\t"):
+            current_children.append(line.rstrip())
             continue
-        bullets.append(Bullet(start, end, line.rstrip()))
+        flush()
+    flush()
     return bullets
 
 
@@ -186,6 +224,7 @@ def render_daily(
     lines.append("")
     for b in bullets:
         lines.append(b.line)
+        lines.extend(b.children)
     lines.append("")
     return "\n".join(lines)
 
@@ -203,12 +242,13 @@ def merge_segment(
     date = segment_scalars.get("date") or existing_scalars.get("date") or ""
 
     combined = _extract_bullets(existing_daily_md) + _extract_bullets(segment_md)
-    seen: set[str] = set()
+    seen: set[tuple[str, tuple[str, ...]]] = set()
     deduped: list[Bullet] = []
     for b in combined:
-        if b.line in seen:
+        key = (b.line, b.children)
+        if key in seen:
             continue
-        seen.add(b.line)
+        seen.add(key)
         deduped.append(b)
     deduped.sort(key=lambda b: (b.start_sec, b.end_sec, b.line))
 

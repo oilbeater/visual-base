@@ -35,6 +35,7 @@ class Span:
     start: datetime
     end: datetime
     line: str  # the full draft line containing this span (already shifted to absolute)
+    is_top_level: bool  # True iff the line starts with "- " (not an indented sub-bullet)
 
 
 def parse_relative(t: str) -> timedelta:
@@ -63,8 +64,16 @@ def shift_ranges(draft: str, base: datetime) -> tuple[str, list[Span]]:
 
         shifted_line = TIME_RANGE_RE.sub(repl, line)
         out_lines.append(shifted_line)
+        is_top_level = shifted_line.startswith("- ")
         for s, e in zip(line_spans_start, line_spans_end):
-            spans.append(Span(start=s, end=e, line=shifted_line.strip()))
+            spans.append(
+                Span(
+                    start=s,
+                    end=e,
+                    line=shifted_line.strip(),
+                    is_top_level=is_top_level,
+                )
+            )
 
     shifted = "\n".join(out_lines)
     if draft.endswith("\n"):
@@ -106,12 +115,18 @@ def validate_bullets(
     min_bullet_seconds: int,
     max_gap_seconds: int,
 ) -> list[Issue]:
-    """Return a list of quality issues, in reading order. Non-blocking."""
+    """Return a list of quality issues, in reading order. Non-blocking.
+
+    Only top-level bullets are validated — indented sub-bullets belong to a
+    parent that owns the full span, so they may legitimately be short or
+    have gaps between siblings.
+    """
     issues: list[Issue] = []
-    if not spans:
+    top_level = [s for s in spans if s.is_top_level]
+    if not top_level:
         return issues
 
-    ordered = sorted(spans, key=lambda s: s.start)
+    ordered = sorted(top_level, key=lambda s: s.start)
 
     # head gap
     head_gap = (ordered[0].start - base).total_seconds()

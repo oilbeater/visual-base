@@ -56,6 +56,26 @@ Over-splitting is far worse than under-splitting — carpet-bombed micro-bullets
 - **相邻 bullet 间隔 ≥ 60 s 的空白会被 Phase 2 标记为 `gap`**。如果真实发生了空白（离座、吃饭），用一条覆盖该段的 bullet 明确记录（例如 `离席` 或 `未在屏幕前`），而不是留空。
 - **单条 bullet 最短 30 s**。更短的会被 Phase 2 标记为 `short`；合并进相邻 bullet。
 
+#### 嵌套合并 — 处理同一主题的多阶段
+
+当若干相邻 bullet 在 ≤ 10 分钟内围绕**同一篇文章 / 同一个 URL / 同一个项目或仓库 / 同一次会话**展开，但分成 ≥ 2 个明显不同的子动作（例如：读原文 → 翻译 → 回看 → 用另一工具复查），优先写**一条父 bullet 覆盖整段**，再用 4 空格缩进列出各子动作的 bullet。
+
+- 父 bullet 的时间范围覆盖所有子项（第一个子项 start → 最后一个子项 end）。
+- 父 bullet 的正文描述**共同主题**（文章标题 / URL / 项目名 / 会话对象），URL 仍写在反引号里。
+- 子 bullet 用标准 ``MM:SS - MM:SS`` 打头，正文描述这一小段**独有**的动作；次要应用（短暂瞟一眼 VS Code、用 Raycast 翻译一下）留在子 bullet 正文里，不要升为兄弟 bullet。
+- 判断口径：同主题 + ≤ 10 min + ≥ 2 个明显不同的子动作 → 嵌套；只有 1 个子动作 → 平铺，别凑嵌套；主题不同的串行事件 → 兄弟 bullet。
+- Phase 2 的 `short` / `gap` 校验**只看顶层 bullet**；子项可以短，可以有空隙。
+
+示例：
+
+```
+- `00:12 - 10:28` 在 [[x.com]] 阅读 [[Garry Tan]] 的文章 "Thin Harness, Fat Skills" `https://x.com/garrytan/status/204292577330098103`
+    - `00:12 - 05:09` 通读原文，期间在 [[VS Code]] 短暂查看 [[visual-base]] 项目代码并用 [[Raycast]] 翻译段落
+    - `05:11 - 07:46` 浏览关于 [[AI agent]] 架构与技能体系的论述
+    - `07:46 - 10:06` 使用 [[Raycast]] Quick AI 翻译整篇为中文，逐段阅读译文
+    - `10:11 - 10:28` 通过 [[Kimi]] 浮窗复核中文翻译
+```
+
 #### 好坏对比
 
 ```
@@ -96,6 +116,10 @@ end: PLACEHOLDER
 - `00:12 - 04:58` 在 [[VS Code]] 编辑 [[bub-eye]] 的 `segment_rotator.py`，调整关键帧间隔参数
 - `05:00 - 06:02` 在 [[微信]] 和 [[chenkai]] 对话，讨论 [[bub-eye]] 项目的进展
 - `06:10 - 09:44` 在 [[trac.ffmpeg.org]] 查阅 `https://trac.ffmpeg.org/wiki/Encode/H.265`，关于 [[HEVC]] 关键帧设置
+- `10:00 - 20:28` 在 [[x.com]] 阅读 [[Garry Tan]] "Thin Harness, Fat Skills" `https://x.com/garrytan/status/204292577330098103`
+    - `10:00 - 14:58` 通读原文，期间用 [[Raycast]] 翻译段落
+    - `15:00 - 17:46` 浏览关于 [[AI agent]] 架构的论述
+    - `17:46 - 20:28` 用 [[Raycast]] Quick AI 翻译为中文逐段阅读
 - ...
 
 ## 关键实体

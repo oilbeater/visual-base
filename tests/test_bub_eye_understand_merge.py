@@ -155,6 +155,83 @@ def test_merge_tolerates_malformed_segment() -> None:
     assert "- `" not in out  # no bullets
 
 
+_SEG_NESTED = """---
+video: /path/eye_20260421_142800.mp4
+date: 2026-04-21
+start: 14:28:11
+end: 14:38:39
+---
+
+# 活动日志
+
+- `14:28:11 - 14:38:39` 在 [[x.com]] 阅读 [[Garry Tan]] "Thin Harness, Fat Skills"
+    - `14:28:11 - 14:33:09` 通读原文，期间在 [[VS Code]] 查看 [[visual-base]] 代码
+    - `14:33:11 - 14:35:46` 浏览关于 [[AI agent]] 的论述
+    - `14:35:46 - 14:38:06` 用 [[Raycast]] Quick AI 翻译
+    - `14:38:11 - 14:38:39` 通过 [[Kimi]] 浮窗复核翻译
+
+## 关键实体
+
+- 人: [[Garry Tan]]
+"""
+
+
+def test_merge_preserves_indented_sub_bullets() -> None:
+    out = merge_segment(
+        segment_md=_SEG_NESTED,
+        segment_video_basename="eye_20260421_142800.mp4",
+        existing_daily_md="",
+    )
+    assert "- `14:28:11 - 14:38:39` 在 [[x.com]]" in out
+    assert "    - `14:28:11 - 14:33:09` 通读原文" in out
+    assert "    - `14:33:11 - 14:35:46` 浏览关于 [[AI agent]]" in out
+    assert "    - `14:35:46 - 14:38:06` 用 [[Raycast]]" in out
+    assert "    - `14:38:11 - 14:38:39` 通过 [[Kimi]]" in out
+    # Sub-bullets sit under their parent, not promoted to top-level order.
+    parent_idx = out.index("- `14:28:11 - 14:38:39`")
+    first_sub_idx = out.index("    - `14:28:11 - 14:33:09`")
+    last_sub_idx = out.index("    - `14:38:11 - 14:38:39`")
+    assert parent_idx < first_sub_idx < last_sub_idx
+
+
+def test_merge_with_nested_bullets_is_idempotent() -> None:
+    once = merge_segment(
+        segment_md=_SEG_NESTED,
+        segment_video_basename="eye_20260421_142800.mp4",
+        existing_daily_md="",
+    )
+    twice = merge_segment(
+        segment_md=_SEG_NESTED,
+        segment_video_basename="eye_20260421_142800.mp4",
+        existing_daily_md=once,
+    )
+    assert twice == once
+
+
+def test_merge_sub_bullets_stay_between_siblings() -> None:
+    seg = """---
+date: 2026-04-21
+---
+
+# 活动日志
+
+- `09:00:00 - 09:30:00` 在 [[VS Code]] 编辑 [[bub-eye]]
+    - `09:00:00 - 09:10:00` 调 `merge.py`
+    - `09:10:00 - 09:30:00` 跑 pytest
+- `10:00:00 - 10:05:00` 在 [[微信]] 和 [[chenkai]] 对话
+"""
+    out = merge_segment(
+        segment_md=seg,
+        segment_video_basename="eye_20260421_090000.mp4",
+        existing_daily_md="",
+    )
+    idx_vscode = out.index("- `09:00:00 - 09:30:00` 在 [[VS Code]]")
+    idx_sub1 = out.index("    - `09:00:00 - 09:10:00` 调")
+    idx_sub2 = out.index("    - `09:10:00 - 09:30:00` 跑")
+    idx_wechat = out.index("- `10:00:00 - 10:05:00` 在 [[微信]]")
+    assert idx_vscode < idx_sub1 < idx_sub2 < idx_wechat
+
+
 def test_merge_preserves_existing_date_when_new_segment_is_bare() -> None:
     bare_seg = "# 活动日志\n\n- `10:00:00 - 10:05:00` something\n"
     existing = (
