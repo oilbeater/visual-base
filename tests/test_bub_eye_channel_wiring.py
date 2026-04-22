@@ -29,8 +29,8 @@ def test_eye_channel_without_handler_stores_none() -> None:
 
 
 @pytest.mark.asyncio
-async def test_start_on_non_intel_mac_is_noop(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(channel_module, "_is_intel_mac", lambda: False)
+async def test_start_off_mac_is_noop(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(channel_module, "_is_mac", lambda: False)
     c = EyeChannel(EyeSettings(), message_handler=_noop_handler)
     await c.start(asyncio.Event())
     assert c._supervisor_task is None
@@ -38,10 +38,10 @@ async def test_start_on_non_intel_mac_is_noop(monkeypatch: pytest.MonkeyPatch) -
 
 
 @pytest.mark.asyncio
-async def test_start_on_intel_mac_spawns_understand_when_handler_present(
+async def test_start_on_mac_spawns_understand_when_handler_present(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 ) -> None:
-    monkeypatch.setattr(channel_module, "_is_intel_mac", lambda: True)
+    monkeypatch.setattr(channel_module, "_is_mac", lambda: True)
 
     class _FakeSupervisor:
         def __init__(self, _settings: Any) -> None:
@@ -72,7 +72,7 @@ async def test_start_on_intel_mac_spawns_understand_when_handler_present(
 async def test_start_skips_understand_when_auto_understand_disabled(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 ) -> None:
-    monkeypatch.setattr(channel_module, "_is_intel_mac", lambda: True)
+    monkeypatch.setattr(channel_module, "_is_mac", lambda: True)
 
     class _FakeSupervisor:
         def __init__(self, _settings: Any) -> None:

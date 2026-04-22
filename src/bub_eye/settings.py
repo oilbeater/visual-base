@@ -70,7 +70,7 @@ class EyeSettings(BaseSettings):
         default=True,
         description=(
             "Whether to auto-trigger the `video-activity-log` skill on each finalized segment. "
-            "Requires `enabled` and an Intel Mac host."
+            "Requires `enabled` and a macOS host."
         ),
     )
     understand_state_dir: Path = Field(

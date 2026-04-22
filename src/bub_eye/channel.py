@@ -24,8 +24,8 @@ from bub_eye.understand import SegmentUnderstander
 _STOP_WAIT_S = 10.0
 
 
-def _is_intel_mac() -> bool:
-    return platform.system() == "Darwin" and platform.machine() in {"x86_64", "i386"}
+def _is_mac() -> bool:
+    return platform.system() == "Darwin"
 
 
 class EyeChannel(Channel):
@@ -47,9 +47,9 @@ class EyeChannel(Channel):
     def enabled(self) -> bool:
         if not self._settings.enabled:
             return False
-        if not _is_intel_mac():
+        if not _is_mac():
             logger.warning(
-                "bub-eye: disabled — v1 supports Intel Mac only (host: {} {})",
+                "bub-eye: disabled — macOS only (host: {} {})",
                 platform.system(),
                 platform.machine(),
             )

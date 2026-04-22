@@ -49,10 +49,17 @@ workspace — everything lives inside the one wheel.
 
 ## Plugin platform rules
 
-`bub_eye` requires Intel Mac (ffmpeg + `hevc_videotoolbox`). On any
-other host `EyeChannel.enabled` returns `False` after a log line and
-`resolve_ffmpeg` is never called — the bundled `imageio-ffmpeg` binary
-just sits unused.
+`bub_eye` requires macOS (Intel + Apple Silicon both supported —
+`avfoundation` input and `hevc_videotoolbox` hardware HEVC are available
+on every Mac we target). On Linux / Windows `EyeChannel.enabled` returns
+`False` after a log line and `resolve_ffmpeg` is never called — the
+bundled `imageio-ffmpeg` binary just sits unused.
+
+The `-pixel_format nv12` + `-framerate 1` avfoundation hints were tuned
+on Intel Mac to cut RSS from ~267 MB to ~96 MB (see `ffmpeg.py`
+docstring). Apple Silicon behavior is expected to be equivalent, but if
+the hints ever stop applying cleanly there, functionality stays intact —
+ffmpeg just falls back to a BGRA→YUV swscale pass at a memory cost.
 
 ## Publishing to PyPI
 

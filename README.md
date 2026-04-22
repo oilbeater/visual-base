@@ -18,9 +18,10 @@ thirty seconds. The raw stream **is** the archive. Structure comes
 
 On top of the stream, `visual-base` ships:
 
-- **`bub_eye`** — a background screen recorder. Intel Mac, hardware
-  HEVC via `avfoundation`, ~135 MB per 15-min 720p segment, self-restarts
-  across sleep / wake / permission changes, near-zero CPU.
+- **`bub_eye`** — a background screen recorder. macOS (Intel + Apple
+  Silicon), hardware HEVC via `avfoundation`, ~135 MB per 15-min 720p
+  segment, self-restarts across sleep / wake / permission changes,
+  near-zero CPU.
 - **`bub_kimi`** — Kimi as the default chat model, via the `kimi` CLI.
 - **`video-activity-log`** — a skill that turns any recorded segment into
   an Obsidian-linkable daily log. One bullet per coherent activity;
@@ -33,12 +34,12 @@ in the tape.
 
 ## Status
 
-**v0.1 — Intel Mac only, recording-first.** `bub_eye` captures to
-`~/.bub/eye/segments/`. The `video-activity-log` skill reads individual
-segments on demand. Model-side ingestion of the full stream — searching
-across days, a `@tool` over the tape, prompt injection of recent context
-— is on the roadmap but not in this release. So are Apple Silicon and
-Linux capture backends.
+**v0.1 — macOS (Intel + Apple Silicon), recording-first.** `bub_eye`
+captures to `~/.bub/eye/segments/`. The `video-activity-log` skill reads
+individual segments on demand. Model-side ingestion of the full stream —
+searching across days, a `@tool` over the tape, prompt injection of
+recent context — is on the roadmap but not in this release. So is a
+Linux capture backend.
 
 ## Install
 
@@ -51,9 +52,9 @@ uv tool install visual-base
 This puts the `visual-base` / `bub` CLIs on your PATH inside an isolated
 tool venv. The bundled `imageio-ffmpeg` ships prebuilt wheels for every
 platform, so the ffmpeg binary `bub_eye` needs is already in place on
-Intel Mac. On all platforms, the first Kimi call auto-installs `kimi-cli`
-as a separate uv tool. You never need to touch `pip`, manage extras, or
-resolve dependency conflicts by hand.
+any Mac (Intel + Apple Silicon). On all platforms, the first Kimi call
+auto-installs `kimi-cli` as a separate uv tool. You never need to touch
+`pip`, manage extras, or resolve dependency conflicts by hand.
 
 Set up Kimi credentials once:
 
@@ -61,7 +62,7 @@ Set up Kimi credentials once:
 cp .env.example .env   # then fill in BUB_KIMI_*
 ```
 
-On Intel Mac, macOS will prompt for **Screen Recording permission** the
+On macOS, the system will prompt for **Screen Recording permission** the
 first time `bub_eye` spawns ffmpeg. The grant is path-specific — re-grant
 if you switch to a system ffmpeg via `BUB_EYE_FFMPEG`.
 
