@@ -9,9 +9,14 @@ happened that day.
 
 `visual-base` just records what your eyes land on. Your screen,
 continuously, as compressed video. That raw stream is the single
-source of truth. Activity logs, search indexes, and any future tool
-use over the footage all come out of it, and none of them replace it.
-If it was on your screen, it is in the recording.
+source of truth. If it was on your screen, it is in the recording.
+
+On top of the video it writes an Obsidian style markdown log of what
+you actually did. You read it to see where your day went. An agent
+reads it to jump to the minute of footage it needs, which makes the
+log less a diary and more an index into the video. Eventually we want
+to let you RAG your own trajectory the same way you already RAG your
+documents.
 
 What ships:
 
