@@ -32,7 +32,14 @@ uv tool install visual-base
 `bub_eye`'s ffmpeg binary ships in the wheel via `imageio-ffmpeg`.
 `kimi-cli` auto-installs as a separate uv tool on the first Kimi call.
 
-Set up Kimi credentials once:
+Authenticate Kimi once. Either log in through the TUI (after `uv tool
+install kimi-cli`):
+
+```bash
+kimi login
+```
+
+or set an API key via env vars:
 
 ```bash
 cp .env.example .env   # then fill in BUB_KIMI_*
