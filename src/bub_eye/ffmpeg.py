@@ -5,74 +5,17 @@ from __future__ import annotations
 import re
 import socket
 import subprocess
-import sys
+
+from imageio_ffmpeg import get_ffmpeg_exe
 
 from bub_eye.settings import EyeSettings
 
 _SCREEN_RE = re.compile(r"\[(\d+)\]\s+Capture screen \d+", re.IGNORECASE)
-IMAGEIO_FFMPEG_SPEC = "imageio-ffmpeg>=0.5.1"
-
-_imageio_ffmpeg_install_checked = False
-
-
-def _ensure_imageio_ffmpeg_installed() -> None:
-    """Install `imageio-ffmpeg` into the current venv if missing.
-
-    We ship `visual-base` without this heavy dep (≈70 MB ffmpeg binary) so
-    Linux / Apple Silicon users don't download it for nothing. On Intel Mac
-    the screen-recording supervisor is the only caller that reaches here,
-    and we install lazily via uv the first time it's needed.
-    """
-    global _imageio_ffmpeg_install_checked
-    if _imageio_ffmpeg_install_checked:
-        return
-    try:
-        import imageio_ffmpeg  # noqa: F401
-    except ImportError:
-        pass
-    else:
-        _imageio_ffmpeg_install_checked = True
-        return
-
-    print(
-        f"bub-eye: imageio-ffmpeg not installed; adding `{IMAGEIO_FFMPEG_SPEC}` "
-        "via `uv pip install` (one-time setup)…",
-        file=sys.stderr,
-        flush=True,
-    )
-    try:
-        subprocess.run(
-            ["uv", "pip", "install", "--python", sys.executable, IMAGEIO_FFMPEG_SPEC],
-            check=True,
-        )
-    except FileNotFoundError as exc:
-        raise RuntimeError(
-            "bub-eye: cannot auto-install imageio-ffmpeg because `uv` is not on PATH. "
-            "Install uv (https://docs.astral.sh/uv/) or pre-install imageio-ffmpeg manually."
-        ) from exc
-    except subprocess.CalledProcessError as exc:
-        raise RuntimeError(
-            f"bub-eye: `uv pip install {IMAGEIO_FFMPEG_SPEC}` failed with exit code "
-            f"{exc.returncode}. Run it manually to see the underlying error."
-        ) from exc
-
-    try:
-        import imageio_ffmpeg  # noqa: F401
-    except ImportError as exc:
-        raise RuntimeError(
-            "bub-eye: imageio-ffmpeg was installed but still cannot be imported. "
-            "Check the active venv with `uv pip list --python "
-            f"{sys.executable}`."
-        ) from exc
-    _imageio_ffmpeg_install_checked = True
 
 
 def resolve_ffmpeg(settings: EyeSettings) -> str:
     if settings.ffmpeg:
         return settings.ffmpeg
-    _ensure_imageio_ffmpeg_installed()
-    from imageio_ffmpeg import get_ffmpeg_exe
-
     return get_ffmpeg_exe()
 
 

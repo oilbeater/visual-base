@@ -12,6 +12,7 @@ dependencies = [
     "bub>=0.3.6,<0.4",
     "loguru>=0.7",
     "pydantic-settings>=2.0",
+    "imageio-ffmpeg>=0.5.1",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",

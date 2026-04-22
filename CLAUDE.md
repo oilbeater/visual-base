@@ -35,25 +35,24 @@ workspace — everything lives inside the one wheel.
 - `bub>=0.3.6,<0.4` — track upstream PyPI releases. Bump the floor when
   you need new framework APIs; bump the ceiling when bub makes a breaking
   minor release.
-- `loguru` and `pydantic-settings` are always installed — `bub_eye`
-  imports them at plugin-load time, even on Linux where the channel
-  then reports `enabled=False`.
-- **No optional extras.** Heavy external deps that only a subset of users
-  need (`kimi-cli`, `imageio-ffmpeg`) are auto-installed on first use by
-  the relevant plugin:
-  - `bub_kimi.plugin._ensure_kimi_installed` → `uv tool install kimi-cli`
-  - `bub_eye.ffmpeg._ensure_imageio_ffmpeg_installed` → `uv pip install --python sys.executable imageio-ffmpeg`
-  Both guard with a module-level flag so they only probe once per process,
-  and both raise `RuntimeError` with an actionable message if `uv` itself
-  is missing or the install fails.
+- `loguru`, `pydantic-settings`, and `imageio-ffmpeg` are always
+  installed — `bub_eye` imports them at plugin-load time, even on Linux
+  where the channel then reports `enabled=False`. `imageio-ffmpeg` ships
+  prebuilt wheels (≈20–30 MB) for every platform we target, so the
+  cross-platform cost is small and we avoid a runtime `uv pip install`
+  dance.
+- **One optional auto-install left.** `kimi-cli` is a separate uv tool
+  (an application, not a Python library), so `bub_kimi.plugin._ensure_kimi_installed`
+  still runs `uv tool install kimi-cli` lazily on first use, guarded by a
+  module-level flag, raising `RuntimeError` with an actionable message if
+  `uv` is missing or the install fails.
 
 ## Plugin platform rules
 
 `bub_eye` requires Intel Mac (ffmpeg + `hevc_videotoolbox`). On any
-other host `EyeChannel.enabled` returns `False` after a log line, which
-means `resolve_ffmpeg` is never called and the lazy imageio-ffmpeg
-install never fires — Linux / Apple Silicon users don't download the
-heavy binary.
+other host `EyeChannel.enabled` returns `False` after a log line and
+`resolve_ffmpeg` is never called — the bundled `imageio-ffmpeg` binary
+just sits unused.
 
 ## Publishing to PyPI
 
