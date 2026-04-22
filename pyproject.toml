@@ -1,6 +1,6 @@
 [project]
 name = "visual-base"
-version = "0.1.1"
+version = "0.2.0"
 description = "A Bub distribution centered on Kimi as the default model and local screen-visual capture."
 readme = "README.md"
 license = { file = "LICENSE" }
