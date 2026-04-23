@@ -32,7 +32,7 @@ your documents.
 | :--- | :--- |
 | `bub_eye` | Background screen recorder for macOS on Intel and Apple Silicon. Hardware HEVC through avfoundation, roughly 10 MB per 15 minutes of footage, almost no CPU. |
 | `bub_kimi` | Wires Kimi in as the default agent for video understanding and daily log generation. |
-| `video-activity-log` | Turns any segment into a daily log you can open in Obsidian. One bullet per activity, with `[[wikilinks]]` on every site, app, person, and project it can identify. |
+| `video-activity-log` | Skill that turns any video segment into a daily log you can open in Obsidian. One bullet per activity, with `[[wikilinks]]` on every site, app, person, and project it can identify. |
 
 ## How it works
 
@@ -53,9 +53,6 @@ understanding step again.
 uv tool install visual-base
 uv tool install kimi-cli
 ```
-
-The ffmpeg binary that `bub_eye` needs ships inside the wheel via
-`imageio-ffmpeg`.
 
 Authenticate Kimi once, either through the TUI:
 
