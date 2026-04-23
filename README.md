@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="assets/logo.svg" width="120" alt="visual-base logo" />
   <h1>visual-base</h1>
   <p><b>The second brain from your eyes.</b></p>
   <a href="https://pypi.org/project/visual-base/"><img src="https://img.shields.io/pypi/v/visual-base?style=flat-square" alt="PyPI"></a>
