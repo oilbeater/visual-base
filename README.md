@@ -51,7 +51,7 @@ flowchart LR
 - `bub gateway` hands that turn to `bub_kimi`. 
 - `bub_kimi` runs the `video-activity-log` skill on the segment. 
 - `.mp4` files are the source of truth. 
-- `.md` log is derived from `.mp4`. It's the natual index of `.mp4`. You can always regenerate it by replaying the understanding step.
+- `.md` log is derived from `.mp4`. It's the natural index of `.mp4`. You can always regenerate it by replaying the understanding step.
 
 ## Install
 
