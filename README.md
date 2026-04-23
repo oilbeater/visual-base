@@ -70,13 +70,12 @@ cp .env.example .env   # then fill in BUB_KIMI_*
 ```
 
 macOS asks for Screen Recording permission the first time `bub_eye`
-spawns ffmpeg. The grant is tied to a specific binary path, so grant
-it again if you later point `BUB_EYE_FFMPEG` at a system ffmpeg.
+spawns ffmpeg.
 
 ## Run
 
 ```bash
-uv tool run visual-base gateway
+visual-base gateway
 ```
 
 Starts the recorder and the Kimi chat channel together. Everything
@@ -90,7 +89,7 @@ lives under `$BUB_HOME`, which defaults to `~/.bub/`.
 ```bash
 uv sync
 cp .env.example .env
-uv run visual-base --help
+uv run visual-base gateway 
 ```
 
 ## Uninstall
