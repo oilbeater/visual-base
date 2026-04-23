@@ -46,12 +46,12 @@ flowchart LR
     K -->|run video-activity-log<br/>skill on segment| D[("Daily log<br/>YYYY-MM-DD.md")]
 ```
 
-The `bub gateway` is the hub: `bub_eye` keeps ffmpeg alive and, each
-time a segment finalizes, injects a turn back into the gateway, which
-hands it to `bub_kimi` to run the `video-activity-log` skill. The
-`.mp4` segments are the source of truth — the daily `.md` log is
-derived from them, and you can always regenerate it by replaying the
-understanding step.
+- `bub gateway` is the hub. 
+- `bub_eye` keeps ffmpeg alive. Each time a segment finalizes, it injects a turn back into the gateway. 
+- `bub gateway` hands that turn to `bub_kimi`. 
+- `bub_kimi` runs the `video-activity-log` skill on the segment. 
+- `.mp4` files are the source of truth. 
+- `.md` log is derived from `.mp4`. It's the natual index of `.mp4`. You can always regenerate it by replaying the understanding step.
 
 ## Install
 
