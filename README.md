@@ -30,22 +30,28 @@ your documents.
 
 | Module | What it does |
 | :--- | :--- |
-| `bub_eye` | Background screen recorder for macOS on Intel and Apple Silicon. Hardware HEVC through avfoundation, roughly 10 MB per 15 minutes of footage, almost no CPU. |
-| `bub_kimi` | Wires Kimi in as the default agent for video understanding and daily log generation. |
-| `video-activity-log` | Skill that turns any video segment into a daily log you can open in Obsidian. One bullet per activity, with `[[wikilinks]]` on every site, app, person, and project it can identify. |
+| [`bub`](https://github.com/bubbuild/bub) | Core framework. The `gateway` is the long-running supervisor that loads channels and plugins, routes turns between them, and hosts the skill runtime. Everything else in this repo plugs into it. |
+| [`bub_eye`](https://github.com/oilbeater/visual-base/tree/main/src/bub_eye) | Background screen recorder for macOS on Intel and Apple Silicon. Shells out to `ffmpeg` with `avfoundation` input and hardware HEVC (`hevc_videotoolbox`), segmented into 15-minute `.mp4` files — roughly 10 MB per segment, almost no CPU. |
+| [`bub_kimi`](https://github.com/oilbeater/visual-base/tree/main/src/bub_kimi) | Wires Kimi in as the default agent for video understanding and daily log generation. |
+| [`video-activity-log`](https://github.com/oilbeater/visual-base/blob/main/src/skills/video-activity-log/SKILL.md) | Skill that turns any video segment into a daily log you can open in Obsidian. One bullet per activity, with `[[wikilinks]]` on every site, app, person, and project it can identify. |
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    S[Screen] -->|avfoundation, HEVC| V["15 min MP4 segment<br/>eye_*.mp4"]
-    V -->|watcher detects finalization| K["Kimi video<br/>understanding"]
-    K -->|one .md per segment<br/>merged by date| D[("Daily log<br/>YYYY-MM-DD.md")]
+    S[Screen] -->|ffmpeg<br/>avfoundation + HEVC| E["bub_eye<br/>channel"]
+    E -->|writes| V[("15 min MP4 segments<br/>eye_*.mp4")]
+    E -->|on segment finalize,<br/>inject turn| G{{"bub gateway"}}
+    G -->|route turn| K["bub_kimi<br/>channel"]
+    K -->|run video-activity-log<br/>skill on segment| D[("Daily log<br/>YYYY-MM-DD.md")]
 ```
 
-The `.mp4` segments are the source of truth. The daily `.md` log is
-derived from them, and you can always regenerate it by running the
-understanding step again.
+The `bub gateway` is the hub: `bub_eye` keeps ffmpeg alive and, each
+time a segment finalizes, injects a turn back into the gateway, which
+hands it to `bub_kimi` to run the `video-activity-log` skill. The
+`.mp4` segments are the source of truth — the daily `.md` log is
+derived from them, and you can always regenerate it by replaying the
+understanding step.
 
 ## Install
 
