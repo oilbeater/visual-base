@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <img src="assets/logo.svg" width="200" alt="visual-base logo" />
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.png">
+    <img src="assets/logo.png" width="200" alt="visual-base logo" />
   </picture>
   <h1>visual-base</h1>
   <p><b>The second brain from your eyes.</b></p>
