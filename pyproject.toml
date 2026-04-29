@@ -33,11 +33,11 @@ Repository = "https://github.com/oilbeater/visual-base"
 Issues = "https://github.com/oilbeater/visual-base/issues"
 
 [project.scripts]
-visual-base = "bub.__main__:app"
+visual-base = "visual_base.cli:main"
 
 [project.entry-points.bub]
 kimi = "bub_kimi.plugin"
-eye = "bub_eye.plugin:main"
+eye = "bub_eye.plugin:EyeImpl"
 
 [build-system]
 requires = ["hatchling"]

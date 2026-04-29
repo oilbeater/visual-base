@@ -1,11 +1,11 @@
 """Background screen-recording plugin for Bub."""
 
-__all__ = ["main"]
+__all__ = ["EyeImpl"]
 
 
 def __getattr__(name: str) -> object:
-    if name == "main":
-        from bub_eye.plugin import main
+    if name == "EyeImpl":
+        from bub_eye.plugin import EyeImpl
 
-        return main
+        return EyeImpl
     raise AttributeError(f"module 'bub_eye' has no attribute {name!r}")

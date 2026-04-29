@@ -42,6 +42,7 @@ class EyeChannel(Channel):
         self._supervisor_task: asyncio.Task[None] | None = None
         self._understand_task: asyncio.Task[None] | None = None
         self._bridge_task: asyncio.Task[None] | None = None
+        self._log_handler_id: int | None = None
 
     @property
     def enabled(self) -> bool:
@@ -59,6 +60,8 @@ class EyeChannel(Channel):
     async def start(self, stop_event: asyncio.Event) -> None:
         if not self.enabled:
             return
+
+        self._install_log_sink()
 
         async def bridge() -> None:
             await stop_event.wait()
@@ -89,3 +92,26 @@ class EyeChannel(Channel):
                 with contextlib.suppress(asyncio.CancelledError, Exception):
                     await task
         logger.info("bub-eye: channel stopped")
+        self._remove_log_sink()
+
+    def _install_log_sink(self) -> None:
+        # logs_dir is None when callers construct ``EyeSettings()`` directly
+        # (e.g. tests) — silently skip file logging in that case.
+        if self._settings.logs_dir is None:
+            return
+        self._settings.logs_dir.mkdir(parents=True, exist_ok=True)
+        self._log_handler_id = logger.add(
+            self._settings.logs_dir / "eye.log",
+            rotation="50 MB",
+            retention="14 days",
+            compression="gz",
+            enqueue=True,
+            filter=lambda record: (record["name"] or "").startswith("bub_eye"),
+        )
+
+    def _remove_log_sink(self) -> None:
+        if self._log_handler_id is None:
+            return
+        with contextlib.suppress(ValueError):
+            logger.remove(self._log_handler_id)
+        self._log_handler_id = None

@@ -2,21 +2,21 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def _bub_home() -> Path:
-    return Path(os.environ.get("BUB_HOME", str(Path.home() / ".bub")))
-
-
 class EyeSettings(BaseSettings):
     """Configuration for the bub-eye screen recorder.
 
-    All fields are driven by `BUB_EYE_*` environment variables. Defaults root
-    storage under `$BUB_HOME/eye/` so the segments stay next to the rest of a
-    Bub installation.
+    Path fields default to ``None`` and are filled in by :func:`build_settings`
+    based on the active project workspace (``<workspace>/recordings``,
+    ``<workspace>/logs``, ``<workspace>/daily-logs``, ``<workspace>/.eye-state``).
+    The ``build_settings`` factory checks ``BUB_EYE_*_DIR`` env vars first and
+    only falls back to the workspace default when the env var is unset — this
+    keeps the env var as an escape hatch for users who pinned a custom path.
     """
 
     model_config = SettingsConfigDict(
@@ -63,7 +63,21 @@ class EyeSettings(BaseSettings):
     scale_height: int = Field(
         default=720, description="Output height in px; -1 disables scaling."
     )
-    segments_dir: Path = Field(default_factory=lambda: _bub_home() / "eye" / "segments")
+    segments_dir: Path | None = Field(
+        default=None,
+        description=(
+            "Where finalized mp4 segments are written. Filled by `build_settings` "
+            "to `<workspace>/recordings`; override with `BUB_EYE_SEGMENTS_DIR`."
+        ),
+    )
+    logs_dir: Path | None = Field(
+        default=None,
+        description=(
+            "Where bub-eye's own runtime log file (`eye.log`) is written. Filled "
+            "by `build_settings` to `<workspace>/logs`; override with "
+            "`BUB_EYE_LOGS_DIR`. Set to `None` to disable file logging."
+        ),
+    )
     display_index: int | None = None
 
     auto_understand_enabled: bool = Field(
@@ -73,15 +87,21 @@ class EyeSettings(BaseSettings):
             "Requires `enabled` and a macOS host."
         ),
     )
-    understand_state_dir: Path = Field(
-        default_factory=lambda: _bub_home() / "eye" / "state",
-        description="Directory holding one JSON per segment tracking understand status.",
+    understand_state_dir: Path | None = Field(
+        default=None,
+        description=(
+            "Directory holding one JSON per segment tracking understand status. "
+            "Filled by `build_settings` to `<workspace>/.eye-state`; override "
+            "with `BUB_EYE_UNDERSTAND_STATE_DIR`."
+        ),
     )
-    understand_logs_dir: Path = Field(
-        default_factory=lambda: _bub_home() / "eye" / "logs",
+    understand_logs_dir: Path | None = Field(
+        default=None,
         description=(
             "Directory receiving daily activity logs named `YYYY-MM-DD.md`. "
-            "One file per day, aggregating bullets across all segments recorded on that date."
+            "One file per day, aggregating bullets across all segments recorded "
+            "on that date. Filled by `build_settings` to `<workspace>/daily-logs`; "
+            "override with `BUB_EYE_UNDERSTAND_LOGS_DIR`."
         ),
     )
     understand_scan_interval_seconds: float = Field(
@@ -117,3 +137,27 @@ class EyeSettings(BaseSettings):
         ),
         description="Template used as the injected turn's content. `{video}` is replaced with the segment's absolute path.",
     )
+
+
+def build_settings(workspace: Path) -> EyeSettings:
+    """Build EyeSettings with output paths rooted at ``workspace``.
+
+    Layout: ``recordings/`` for mp4, ``logs/`` for the runtime log,
+    ``daily-logs/`` for daily activity markdown, ``.eye-state/`` for
+    per-segment JSON state.
+
+    Each path also has an env-var escape hatch (``BUB_EYE_SEGMENTS_DIR``
+    etc.). pydantic-settings ranks init kwargs *above* env vars, so we
+    invert that here: a kwarg is only forwarded when the corresponding
+    env var is unset, leaving env users in full control.
+    """
+    kwargs: dict[str, Any] = {}
+    if "BUB_EYE_SEGMENTS_DIR" not in os.environ:
+        kwargs["segments_dir"] = workspace / "recordings"
+    if "BUB_EYE_LOGS_DIR" not in os.environ:
+        kwargs["logs_dir"] = workspace / "logs"
+    if "BUB_EYE_UNDERSTAND_STATE_DIR" not in os.environ:
+        kwargs["understand_state_dir"] = workspace / ".eye-state"
+    if "BUB_EYE_UNDERSTAND_LOGS_DIR" not in os.environ:
+        kwargs["understand_logs_dir"] = workspace / "daily-logs"
+    return EyeSettings(**kwargs)

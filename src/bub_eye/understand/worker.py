@@ -50,6 +50,9 @@ class SegmentUnderstander:
                 "bub-eye: auto-understand disabled (BUB_EYE_AUTO_UNDERSTAND_ENABLED=false)"
             )
             return
+        assert self._settings.understand_state_dir is not None
+        assert self._settings.segments_dir is not None
+        assert self._settings.understand_logs_dir is not None
         self._settings.understand_state_dir.mkdir(parents=True, exist_ok=True)
         logger.info(
             "bub-eye: auto-understand starting (state_dir={}, scan_interval={}s)",
@@ -73,6 +76,7 @@ class SegmentUnderstander:
 
     async def tick(self, *, now: float | None = None) -> None:
         """One scan pass. Exposed for tests."""
+        assert self._settings.segments_dir is not None
         current = time.time() if now is None else now
         segments = list_finalized_segments(
             self._settings.segments_dir,
@@ -83,6 +87,7 @@ class SegmentUnderstander:
             await self._process_segment(video, now=current)
 
     async def _process_segment(self, video: Path, *, now: float) -> None:
+        assert self._settings.understand_state_dir is not None
         state_dir = self._settings.understand_state_dir
         state = load_state(state_dir, video)
 
@@ -136,6 +141,7 @@ class SegmentUnderstander:
 
     def _merge_into_daily(self, video: Path, segment_md: Path) -> None:
         """Best-effort append of this segment's bullets into the daily log."""
+        assert self._settings.understand_logs_dir is not None
         daily = daily_log_path(self._settings.understand_logs_dir, video)
         if daily is None:
             logger.warning(
@@ -153,6 +159,7 @@ class SegmentUnderstander:
         logger.info("bub-eye: merged {} → {}", video.name, daily)
 
     async def _inject(self, video: Path, state: SegmentState) -> None:
+        assert self._settings.understand_state_dir is not None
         session_id = f"eye-{video.stem}"
         content = self._settings.understand_trigger_phrase.format(
             video=str(video.resolve())

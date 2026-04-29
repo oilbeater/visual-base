@@ -100,6 +100,10 @@ def build_command(
     local time; the supervisor passes `TZ=UTC` in the environment so filenames
     are UTC-stamped regardless of host timezone.
     """
+    assert settings.segments_dir is not None, (
+        "segments_dir must be resolved before build_command; "
+        "use bub_eye.settings.build_settings(workspace) or set BUB_EYE_SEGMENTS_DIR"
+    )
     fps = 1.0 / settings.sample_interval_seconds
     seg = settings.segment_seconds
     kf = settings.keyframe_interval_seconds

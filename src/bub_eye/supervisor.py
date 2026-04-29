@@ -35,6 +35,10 @@ class FFmpegSupervisor:
         self._backoff = _BACKOFF_INITIAL_S
 
     async def run(self, stop_event: asyncio.Event) -> None:
+        assert self._settings.segments_dir is not None, (
+            "segments_dir must be resolved before supervisor.run; "
+            "use bub_eye.settings.build_settings(workspace) or set BUB_EYE_SEGMENTS_DIR"
+        )
         self._settings.segments_dir.mkdir(parents=True, exist_ok=True)
         try:
             ffmpeg = resolve_ffmpeg(self._settings)
